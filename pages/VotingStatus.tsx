@@ -105,7 +105,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
     }
 
     switch(activeFilter) {
-        case 'sheema': return { title: 'Sheema Voters List', icon: <CheckSquare className="mr-3 h-6 w-6 text-purple-600"/> };
+        case 'sheema': return { title: 'Sheema Voters List', icon: <CheckSquare className="mr-3 h-6 w-6 text-teal-600"/> };
         case 'sadiq': return { title: 'Sadiq Voters List', icon: <ShieldCheck className="mr-3 h-6 w-6 text-indigo-600"/> };
         case 'total': return { title: 'Total Registered Voters', icon: <Users className="mr-3 h-6 w-6 text-blue-600"/> };
         case 'voted': return { title: 'Votes Cast List', icon: <CheckCircle className="mr-3 h-6 w-6 text-green-600"/> };
@@ -318,19 +318,28 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Sheema Card */}
         <div 
             onClick={() => handleFilterClick('sheema')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-purple-200 bg-purple-50/30 cursor-pointer transition-all hover:shadow-md hover:border-purple-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-teal-200 bg-teal-50/30 cursor-pointer transition-all hover:shadow-md hover:border-teal-300 group"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-800 group-hover:underline">Sheema Status</p>
-              <p className="text-3xl font-bold text-purple-900 mt-1">
+              <p className="text-sm font-medium text-teal-800 group-hover:underline">Sheema Status</p>
+              <p className="text-3xl font-bold text-teal-900 mt-1">
                 {sheemaVoted}
-                <span className="text-lg text-purple-400 font-normal"> / {sheemaTotal}</span>
+                <span className="text-lg text-teal-500 font-normal"> / {sheemaTotal}</span>
               </p>
-              <p className="text-sm text-purple-600 mt-1">{sheemaPercentage}% Turnout</p>
+              <p className="text-sm text-teal-600 mt-1">{sheemaPercentage}% Turnout</p>
             </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-              <CheckSquare className="h-6 w-6 text-purple-600" />
+            <div className="h-16 w-16 rounded-full border-4 border-white shadow-sm overflow-hidden bg-teal-100 flex-shrink-0">
+               {/* 
+                  PLACEHOLDER IMAGE: 
+                  Replace the src below with your actual image path, e.g., src="/sheema.png"
+                  if you have uploaded the file to your public folder.
+               */}
+               <img 
+                 src="https://placehold.co/200x200/4FD1C5/ffffff?text=Sheema" 
+                 alt="Sheema Candidate" 
+                 className="h-full w-full object-cover" 
+               />
             </div>
           </div>
         </div>
