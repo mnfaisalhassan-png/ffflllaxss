@@ -49,7 +49,7 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-blue-50 flex">
       {/* Sidebar for Desktop */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-white">
         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
@@ -57,7 +57,7 @@ export const Layout: React.FC<LayoutProps> = ({
              <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
                 <FileText className="h-5 w-5 text-white" />
              </div>
-             <span className="text-xl font-bold text-gray-900">VoteFlow</span>
+             <span className="text-xl font-bold text-gray-900">N.Kudafari</span>
           </div>
           <nav className="mt-2 flex-1 px-2 space-y-1">
             <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />
@@ -97,7 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-2">
                 <FileText className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-gray-900">VoteFlow</span>
+            <span className="text-lg font-bold text-gray-900">N.Kudafari</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600">
           <Menu className="h-6 w-6" />
@@ -114,7 +114,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
                     <FileText className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-900">VoteFlow</span>
+                <span className="text-xl font-bold text-gray-900">N.Kudafari</span>
               </div>
               <nav className="space-y-1">
                 <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />

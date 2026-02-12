@@ -124,7 +124,7 @@ const App: React.FC = () => {
 
   if (currentPage === 'forgot-password') {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
             <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow">
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">Forgot Password</h2>
                 <p className="text-center text-gray-500">

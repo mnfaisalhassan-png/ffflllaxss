@@ -109,13 +109,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }
   };
 
   if (isCheckingSystem) {
-      return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Checking System Status...</div>;
+      return <div className="min-h-screen flex items-center justify-center bg-blue-50 text-gray-500">Checking System Status...</div>;
   }
 
   // --- DATABASE ERROR / SETUP VIEW ---
   if (setupRequired === 'db-error') {
       return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-red-200">
                     <div className="flex items-center justify-center mb-4">
@@ -187,13 +187,13 @@ create policy "Public Access" on parties for all using (true) with check (true);
   // --- CREATE ADMIN VIEW ---
   if (setupRequired === 'create-admin') {
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center">
                     <Shield className="h-6 w-6 text-white" />
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Welcome to VoteFlow
+                    Welcome to N.Kudafari
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
                     System initialized. Please create your admin account.
@@ -242,7 +242,7 @@ create policy "Public Access" on parties for all using (true) with check (true);
 
   // --- NORMAL LOGIN VIEW ---
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center">
             <Lock className="h-6 w-6 text-white" />

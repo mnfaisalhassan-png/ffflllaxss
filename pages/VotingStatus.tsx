@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { storageService } from '../services/storage';
 import { VoterRecord } from '../types';
 import { 
-  BarChart3, Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
-  Search, ArrowLeft, MapPin, Phone
+  Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
+  Search, ArrowLeft, MapPin, Phone, Flag
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
@@ -15,6 +15,8 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
   const [voters, setVoters] = useState<VoterRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'sheema' | 'sadiq' | 'total' | 'voted' | 'pending' | null>(null);
+  const [selectedIsland, setSelectedIsland] = useState<string | null>(null);
+  const [selectedParty, setSelectedParty] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -65,12 +67,24 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
 
   // List View Filter Logic
   const filteredList = voters.filter(v => {
-    if (activeFilter === 'sheema' && !v.sheema) return false;
-    if (activeFilter === 'sadiq' && !v.sadiq) return false;
-    if (activeFilter === 'voted' && !v.hasVoted) return false;
-    if (activeFilter === 'pending' && v.hasVoted) return false;
-    // 'total' allows all
+    // 1. Filter by Island (if selected)
+    if (selectedIsland) {
+        if (v.island !== selectedIsland) return false;
+    }
+    // 2. Filter by Party (if selected)
+    else if (selectedParty) {
+        const vParty = v.registrarParty || 'Unknown';
+        if (vParty !== selectedParty) return false;
+    }
+    // 3. OR Filter by Category (if active) - mutually exclusive with Island/Party filter in this UI flow
+    else if (activeFilter) {
+        if (activeFilter === 'sheema' && !v.sheema) return false;
+        if (activeFilter === 'sadiq' && !v.sadiq) return false;
+        if (activeFilter === 'voted' && !v.hasVoted) return false;
+        if (activeFilter === 'pending' && v.hasVoted) return false;
+    }
     
+    // 4. Search Filter (Always active)
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
         return (
@@ -83,6 +97,13 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
   });
 
   const getHeaderInfo = () => {
+    if (selectedIsland) {
+        return { title: `${selectedIsland} Voters`, icon: <MapPin className="mr-3 h-6 w-6 text-primary-600"/> };
+    }
+    if (selectedParty) {
+        return { title: `${selectedParty} Members`, icon: <Flag className="mr-3 h-6 w-6 text-pink-600"/> };
+    }
+
     switch(activeFilter) {
         case 'sheema': return { title: 'Sheema Voters List', icon: <CheckSquare className="mr-3 h-6 w-6 text-purple-600"/> };
         case 'sadiq': return { title: 'Sadiq Voters List', icon: <ShieldCheck className="mr-3 h-6 w-6 text-indigo-600"/> };
@@ -93,10 +114,35 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
     }
   };
 
+  const handleFilterClick = (filter: 'sheema' | 'sadiq' | 'total' | 'voted' | 'pending') => {
+      setSelectedIsland(null);
+      setSelectedParty(null);
+      setActiveFilter(filter);
+  };
+
+  const handleIslandClick = (islandName: string) => {
+      setActiveFilter(null);
+      setSelectedParty(null);
+      setSelectedIsland(islandName);
+  };
+
+  const handlePartyClick = (partyName: string) => {
+      setActiveFilter(null);
+      setSelectedIsland(null);
+      setSelectedParty(partyName);
+  };
+
+  const handleBack = () => {
+      setActiveFilter(null);
+      setSelectedIsland(null);
+      setSelectedParty(null);
+      setSearchQuery('');
+  };
+
   if (isLoading) return <div className="p-10 text-center text-gray-500">Loading voting status...</div>;
 
-  // Render List View if a filter is active
-  if (activeFilter) {
+  // Render List View if a filter, island, or party is active
+  if (activeFilter || selectedIsland || selectedParty) {
       const headerInfo = getHeaderInfo();
       
       return (
@@ -106,7 +152,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                 <div className="flex items-center">
                     <Button 
                         variant="secondary" 
-                        onClick={() => { setActiveFilter(null); setSearchQuery(''); }}
+                        onClick={handleBack}
                         className="mr-4 rounded-full w-10 h-10 p-0 flex items-center justify-center"
                     >
                         <ArrowLeft className="h-5 w-5" />
@@ -146,7 +192,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voter</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Island</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Party</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
@@ -161,13 +207,19 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                                 filteredList.map((voter) => (
                                     <tr 
                                         key={voter.id} 
-                                        className="hover:bg-gray-50 cursor-pointer"
+                                        className="hover:bg-gray-50 cursor-pointer transition-colors"
                                         onClick={() => onVoterClick && onVoterClick(voter.id)}
                                     >
                                         <td className="px-6 py-4">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">{voter.fullName}</div>
                                                 <div className="text-sm text-gray-500 font-mono">{voter.idCardNumber}</div>
+                                                {voter.phoneNumber && (
+                                                    <div className="flex items-center text-xs text-gray-400 mt-1 md:hidden">
+                                                        <Phone className="h-3 w-3 mr-1" />
+                                                        {voter.phoneNumber}
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -177,14 +229,10 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {voter.phoneNumber ? (
-                                                <div className="flex items-center text-sm text-gray-700">
-                                                    <Phone className="h-3 w-3 mr-1.5 text-gray-400" />
-                                                    {voter.phoneNumber}
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm text-gray-400 italic">No number</span>
-                                            )}
+                                            <div className="flex items-center text-sm text-gray-700">
+                                                <Flag className="h-3 w-3 mr-1.5 text-gray-400" />
+                                                {voter.registrarParty || 'Independent'}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {voter.hasVoted ? (
@@ -213,14 +261,14 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 flex items-center">
         <PieChart className="mr-3 h-6 w-6 text-primary-600"/>
-        Voting Status Overview
+        N.Kudafari Council Election Overview
       </h1>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {/* Total Registered Card */}
         <div 
-            onClick={() => setActiveFilter('total')}
+            onClick={() => handleFilterClick('total')}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-blue-300 group"
         >
           <div className="flex items-center justify-between">
@@ -236,7 +284,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
 
         {/* Votes Cast Card */}
         <div 
-            onClick={() => setActiveFilter('voted')}
+            onClick={() => handleFilterClick('voted')}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-green-300 group"
         >
           <div className="flex items-center justify-between">
@@ -253,7 +301,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
 
         {/* Pending Votes Card */}
         <div 
-            onClick={() => setActiveFilter('pending')}
+            onClick={() => handleFilterClick('pending')}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-orange-300 group"
         >
           <div className="flex items-center justify-between">
@@ -269,7 +317,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         
         {/* Sheema Card */}
         <div 
-            onClick={() => setActiveFilter('sheema')}
+            onClick={() => handleFilterClick('sheema')}
             className="bg-white p-6 rounded-xl shadow-sm border border-purple-200 bg-purple-50/30 cursor-pointer transition-all hover:shadow-md hover:border-purple-300 group"
         >
           <div className="flex items-center justify-between">
@@ -289,7 +337,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
 
         {/* Sadiq Card */}
         <div 
-            onClick={() => setActiveFilter('sadiq')}
+            onClick={() => handleFilterClick('sadiq')}
             className="bg-white p-6 rounded-xl shadow-sm border border-indigo-200 bg-indigo-50/30 cursor-pointer transition-all hover:shadow-md hover:border-indigo-300 group"
         >
           <div className="flex items-center justify-between">
@@ -322,9 +370,13 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                    {Object.entries(islandStats).map(([island, stats]: [string, { total: number; voted: number }]) => {
                      const pct = stats.total > 0 ? Math.round((stats.voted / stats.total) * 100) : 0;
                      return (
-                       <div key={island}>
+                       <div 
+                        key={island} 
+                        className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors group"
+                        onClick={() => handleIslandClick(island)}
+                       >
                          <div className="flex justify-between text-sm mb-1">
-                           <span className="font-medium text-gray-700">{island}</span>
+                           <span className="font-medium text-gray-700 group-hover:text-primary-700 underline-offset-2 group-hover:underline">{island}</span>
                            <span className="text-gray-500">{stats.voted}/{stats.total} ({pct}%)</span>
                          </div>
                          <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -351,9 +403,13 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                    {Object.entries(partyStats).map(([party, stats]: [string, { total: number; voted: number }]) => {
                      const sharePct = totalVoters > 0 ? (stats.total / totalVoters) * 100 : 0;
                      return (
-                       <div key={party}>
+                       <div 
+                        key={party} 
+                        className="p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors group"
+                        onClick={() => handlePartyClick(party)}
+                       >
                          <div className="flex justify-between text-sm mb-1">
-                           <span className="font-medium text-gray-700">{party}</span>
+                           <span className="font-medium text-gray-700 group-hover:text-primary-700 underline-offset-2 group-hover:underline">{party}</span>
                            <span className="text-gray-500">{stats.total} Registered</span>
                          </div>
                          <div className="w-full bg-gray-200 rounded-full h-2.5">
