@@ -60,8 +60,8 @@ export const Layout: React.FC<LayoutProps> = ({
              <span className="text-xl font-bold text-gray-900">VoteFlow</span>
           </div>
           <nav className="mt-2 flex-1 px-2 space-y-1">
-            <NavItem page="dashboard" icon={Users} label="Voting Registration" />
             <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />
+            <NavItem page="dashboard" icon={Users} label="Voting Registration" />
             <NavItem page="profile" icon={UserIcon} label="My Profile" />
             {user.role === 'admin' && (
               <NavItem page="admin-panel" icon={ShieldCheck} label="Admin Panel" />
@@ -117,8 +117,8 @@ export const Layout: React.FC<LayoutProps> = ({
                 <span className="text-xl font-bold text-gray-900">VoteFlow</span>
               </div>
               <nav className="space-y-1">
-                <NavItem page="dashboard" icon={Users} label="Voting Registration" />
                 <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />
+                <NavItem page="dashboard" icon={Users} label="Voting Registration" />
                 <NavItem page="profile" icon={UserIcon} label="My Profile" />
                 {user.role === 'admin' && (
                   <NavItem page="admin-panel" icon={ShieldCheck} label="Admin Panel" />

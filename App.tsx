@@ -25,7 +25,7 @@ const App: React.FC = () => {
         const storedUser = storageService.getCurrentUser();
         if (storedUser) {
             setUser(storedUser);
-            setCurrentPage('dashboard');
+            setCurrentPage('voting-status');
         }
         setIsLoading(false);
     };
@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const handleLoginSuccess = (loggedInUser: User) => {
     setUser(loggedInUser);
     storageService.setCurrentUser(loggedInUser);
-    setCurrentPage('dashboard');
+    setCurrentPage('voting-status');
   };
 
   const handleLogout = () => {
