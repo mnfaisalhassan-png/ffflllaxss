@@ -3,7 +3,7 @@ import { User, UserRole } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Trash2, UserPlus, Save, Shield, User as UserIcon, Eye } from 'lucide-react';
+import { Trash2, UserPlus, Save, Shield, User as UserIcon, Eye, AlertTriangle, Terminal } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 export const AdminPanel: React.FC = () => {
@@ -16,6 +16,9 @@ export const AdminPanel: React.FC = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<UserRole>('user');
+
+  // Error State
+  const [showSchemaError, setShowSchemaError] = useState(false);
 
   const refreshUsers = async () => {
       const data = await storageService.getUsers();
@@ -75,9 +78,14 @@ export const AdminPanel: React.FC = () => {
         }
         await refreshUsers();
         setIsModalOpen(false);
-    } catch (e) {
-        alert("Failed to save user. If this is a new role, ensure the database constraint allows it.");
-        console.error(e);
+    } catch (e: any) {
+        console.error("Save User Error:", e);
+        // Check for Postgres check violation (code 23514) or specific message content
+        if (e.code === '23514' || (e.message && (e.message.includes('check constraint') || e.message.includes('users_role_check')))) {
+            setShowSchemaError(true);
+        } else {
+            alert("Failed to save user: " + e.message);
+        }
     }
   };
 
@@ -156,6 +164,7 @@ export const AdminPanel: React.FC = () => {
         </table>
       </div>
 
+      {/* CREATE / EDIT USER MODAL */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -240,6 +249,39 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* SCHEMA ERROR MODAL */}
+      <Modal
+        isOpen={showSchemaError}
+        onClose={() => setShowSchemaError(false)}
+        title="Database Update Required"
+        footer={
+            <Button onClick={() => setShowSchemaError(false)}>Close</Button>
+        }
+      >
+          <div className="flex flex-col items-center justify-center p-2">
+            <div className="bg-orange-100 p-3 rounded-full mb-4">
+                <AlertTriangle className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Constraint Violation Detected</h3>
+            <p className="text-sm text-gray-600 text-center mb-4">
+                The database refused to save the user because the role <strong>'{role}'</strong> is not in the allowed list of roles in the database schema.
+            </p>
+            <p className="text-sm text-gray-600 text-center mb-6">
+                Please run the following SQL command in your Supabase SQL Editor to update the allowed roles:
+            </p>
+            
+            <div className="bg-gray-800 rounded-md p-4 w-full relative group">
+                <div className="absolute top-2 right-2 text-xs text-gray-400 flex items-center">
+                    <Terminal className="w-3 h-3 mr-1" /> SQL
+                </div>
+                <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
+{`alter table users drop constraint if exists users_role_check;
+alter table users add constraint users_role_check check (role in ('admin', 'user', 'mamdhoob'));`}
+                </code>
+            </div>
+          </div>
       </Modal>
     </div>
   );
