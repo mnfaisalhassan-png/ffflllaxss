@@ -132,16 +132,21 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     <div className="bg-gray-800 rounded-md p-4 overflow-x-auto mb-6">
                         <code className="text-sm text-green-400 whitespace-pre">
 {`-- Run this SQL in your Supabase SQL Editor
+-- This script is safe to run even if tables partially exist
 
-create table users (
+create table if not exists users (
   id uuid default gen_random_uuid() primary key,
   username text unique not null,
   password text not null,
   full_name text,
-  role text check (role in ('admin', 'user', 'mamdhoob'))
+  role text
 );
 
-create table voters (
+-- Fix Roles Constraint
+alter table users drop constraint if exists users_role_check;
+alter table users add constraint users_role_check check (role in ('admin', 'user', 'mamdhoob'));
+
+create table if not exists voters (
   id uuid default gen_random_uuid() primary key,
   id_card_number text unique,
   full_name text,
@@ -156,17 +161,17 @@ create table voters (
   updated_at timestamptz default now()
 );
 
-create table islands (
+create table if not exists islands (
   id uuid default gen_random_uuid() primary key,
   name text unique not null
 );
 
-create table parties (
+create table if not exists parties (
   id uuid default gen_random_uuid() primary key,
   name text unique not null
 );
 
-create table messages (
+create table if not exists messages (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references users(id),
   user_name text not null,
@@ -181,11 +186,11 @@ alter table islands enable row level security;
 alter table parties enable row level security;
 alter table messages enable row level security;
 
-create policy "Public Access" on users for all using (true) with check (true);
-create policy "Public Access" on voters for all using (true) with check (true);
-create policy "Public Access" on islands for all using (true) with check (true);
-create policy "Public Access" on parties for all using (true) with check (true);
-create policy "Public Access" on messages for all using (true) with check (true);`}
+create policy "Public Access Users" on users for all using (true) with check (true);
+create policy "Public Access Voters" on voters for all using (true) with check (true);
+create policy "Public Access Islands" on islands for all using (true) with check (true);
+create policy "Public Access Parties" on parties for all using (true) with check (true);
+create policy "Public Access Messages" on messages for all using (true) with check (true);`}
                         </code>
                     </div>
                     <div className="text-center">

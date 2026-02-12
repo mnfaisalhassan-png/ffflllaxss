@@ -266,10 +266,8 @@ export const AdminPanel: React.FC = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Constraint Violation Detected</h3>
             <p className="text-sm text-gray-600 text-center mb-4">
-                The database refused to save the user because the role <strong>'{role}'</strong> is not in the allowed list of roles in the database schema.
-            </p>
-            <p className="text-sm text-gray-600 text-center mb-6">
-                Please run the following SQL command in your Supabase SQL Editor to update the allowed roles:
+                The allowed roles in your database need to be updated. <br/>
+                <strong>Clear your Supabase SQL Editor first</strong>, then paste and run the code below:
             </p>
             
             <div className="bg-gray-800 rounded-md p-4 w-full relative group">
@@ -277,8 +275,11 @@ export const AdminPanel: React.FC = () => {
                     <Terminal className="w-3 h-3 mr-1" /> SQL
                 </div>
                 <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
-{`alter table users drop constraint if exists users_role_check;
-alter table users add constraint users_role_check check (role in ('admin', 'user', 'mamdhoob'));`}
+{`-- 1. Clear your SQL Editor window
+-- 2. Paste and Run this:
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'user', 'mamdhoob'));`}
                 </code>
             </div>
           </div>
