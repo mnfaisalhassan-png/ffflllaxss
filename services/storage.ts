@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { STORAGE_KEYS, ISLANDS, DEFAULT_PARTIES, ADMIN_CREDENTIALS } from '../constants';
-import { User, VoterRecord } from '../types';
+import { User, VoterRecord, ChatMessage } from '../types';
 
 // Supabase Configuration
 const SUPABASE_URL = 'https://hrvljfayyfmvoywiklgk.supabase.co';
@@ -178,6 +178,40 @@ export const storageService = {
 
   deleteParty: async (name: string) => {
     const { error } = await supabase.from('parties').delete().eq('name', name);
+    if (error) throw error;
+  },
+
+  // --- CHAT MESSAGES (Supabase) ---
+  
+  getMessages: async (limit = 50): Promise<ChatMessage[]> => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      return [];
+    }
+
+    return data.reverse().map((m: any) => ({
+      id: m.id,
+      userId: m.user_id,
+      userName: m.user_name,
+      content: m.content,
+      createdAt: new Date(m.created_at).getTime()
+    }));
+  },
+
+  sendMessage: async (userId: string, userName: string, content: string) => {
+    const { error } = await supabase.from('messages').insert([{
+      user_id: userId,
+      user_name: userName,
+      content: content,
+      created_at: new Date().toISOString()
+    }]);
+    
     if (error) throw error;
   }
 };

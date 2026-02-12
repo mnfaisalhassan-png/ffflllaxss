@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AdminPanel } from './pages/AdminPanel';
 import { VotingStatus } from './pages/VotingStatus';
+import { ChatPage } from './pages/ChatPage';
 import { Layout } from './components/Layout';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
@@ -81,6 +82,9 @@ const App: React.FC = () => {
     }
     if (currentPage === 'voting-status') {
       return <VotingStatus onVoterClick={handleVoterClick} />;
+    }
+    if (currentPage === 'chat') {
+        return <ChatPage currentUser={user!} />;
     }
     if (currentPage === 'admin-panel') {
       if (user?.role !== 'admin') {

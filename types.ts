@@ -24,4 +24,12 @@ export interface VoterRecord {
   updatedAt: number;
 }
 
-export type PageView = 'login' | 'dashboard' | 'admin-panel' | 'forgot-password' | 'profile' | 'voting-status';
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  content: string;
+  createdAt: number;
+}
+
+export type PageView = 'login' | 'dashboard' | 'admin-panel' | 'forgot-password' | 'profile' | 'voting-status' | 'chat';

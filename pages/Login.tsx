@@ -163,16 +163,26 @@ create table parties (
   name text unique not null
 );
 
+create table messages (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references users(id),
+  user_name text not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+
 -- Basic Policies (Adjust for production)
 alter table users enable row level security;
 alter table voters enable row level security;
 alter table islands enable row level security;
 alter table parties enable row level security;
+alter table messages enable row level security;
 
 create policy "Public Access" on users for all using (true) with check (true);
 create policy "Public Access" on voters for all using (true) with check (true);
 create policy "Public Access" on islands for all using (true) with check (true);
-create policy "Public Access" on parties for all using (true) with check (true);`}
+create policy "Public Access" on parties for all using (true) with check (true);
+create policy "Public Access" on messages for all using (true) with check (true);`}
                         </code>
                     </div>
                     <div className="text-center">

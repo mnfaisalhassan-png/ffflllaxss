@@ -19,6 +19,9 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
   const [selectedParty, setSelectedParty] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Image handling
+  const [sheemaImgError, setSheemaImgError] = useState(false);
+
   useEffect(() => {
     storageService.getVoters().then(data => {
         setVoters(data);
@@ -329,16 +332,12 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
               </p>
               <p className="text-sm text-teal-600 mt-1">{sheemaPercentage}% Turnout</p>
             </div>
-            <div className="h-16 w-16 rounded-full border-4 border-white shadow-sm overflow-hidden bg-teal-100 flex-shrink-0">
-               {/* 
-                  PLACEHOLDER IMAGE: 
-                  Replace the src below with your actual image path, e.g., src="/sheema.png"
-                  if you have uploaded the file to your public folder.
-               */}
+            <div className="h-16 w-16 rounded-full border-4 border-white shadow-sm overflow-hidden bg-teal-100 flex-shrink-0 relative">
                <img 
-                 src="https://placehold.co/200x200/4FD1C5/ffffff?text=Sheema" 
+                 src={sheemaImgError ? "https://placehold.co/200x200/4FD1C5/ffffff?text=Sheema" : "./sheema.png"} 
                  alt="Sheema Candidate" 
-                 className="h-full w-full object-cover" 
+                 className="h-full w-full object-cover"
+                 onError={() => setSheemaImgError(true)}
                />
             </div>
           </div>
