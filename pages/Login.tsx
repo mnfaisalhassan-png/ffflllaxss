@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { storageService } from '../services/storage';
-import { ADMIN_CREDENTIALS } from '../constants';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Lock, User as UserIcon, AlertCircle, Info, Database, Shield } from 'lucide-react';
+import { Lock, User as UserIcon, AlertCircle, Database, Shield } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
@@ -29,12 +28,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }
 
   useEffect(() => {
     checkSystem();
-    
-    // Check for admin param in URL
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === 'true') {
-      setUsername(ADMIN_CREDENTIALS.username);
-    }
   }, []);
 
   const checkSystem = async () => {
@@ -113,11 +106,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }
       } finally {
           setIsLoading(false);
       }
-  };
-
-  const fillCredentials = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
   };
 
   if (isCheckingSystem) {
@@ -338,40 +326,6 @@ create policy "Public Access" on parties for all using (true) with check (true);
               </Button>
             </div>
           </form>
-
-          <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Demo Credentials
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 bg-blue-50 rounded-md p-4 border border-blue-100">
-                <div className="flex items-start">
-                    <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
-                    <div className="text-sm text-blue-800 w-full">
-                        <p className="font-semibold mb-2">Click to autofill:</p>
-                        <div className="space-y-2">
-                            <button 
-                                onClick={() => fillCredentials('faisalhassan', 'FaisalHassan')}
-                                className="w-full text-left p-2 bg-white rounded border border-blue-200 hover:bg-blue-50 transition-colors flex justify-between items-center group"
-                            >
-                                <div>
-                                    <span className="font-bold text-xs uppercase tracking-wider text-blue-600">Admin</span>
-                                    <div className="text-xs text-gray-600">User: faisalhassan</div>
-                                </div>
-                                <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100">Use →</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-          </div>
         </div>
         
         <div className="mt-6 text-center">
