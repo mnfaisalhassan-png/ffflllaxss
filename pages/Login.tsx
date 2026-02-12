@@ -135,7 +135,7 @@ create table users (
   username text unique not null,
   password text not null,
   full_name text,
-  role text check (role in ('admin', 'user'))
+  role text check (role in ('admin', 'user', 'mamdhoob'))
 );
 
 create table voters (

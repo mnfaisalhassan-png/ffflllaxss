@@ -3,7 +3,7 @@ import { User, UserRole } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Trash2, UserPlus, Save, Shield, User as UserIcon } from 'lucide-react';
+import { Trash2, UserPlus, Save, Shield, User as UserIcon, Eye } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 export const AdminPanel: React.FC = () => {
@@ -76,8 +76,16 @@ export const AdminPanel: React.FC = () => {
         await refreshUsers();
         setIsModalOpen(false);
     } catch (e) {
-        alert("Failed to save user.");
+        alert("Failed to save user. If this is a new role, ensure the database constraint allows it.");
         console.error(e);
+    }
+  };
+
+  const getRoleBadge = (role: UserRole) => {
+    switch(role) {
+      case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'mamdhoob': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-green-100 text-green-800';
     }
   };
 
@@ -119,7 +127,7 @@ export const AdminPanel: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getRoleBadge(user.role)}`}>
                     {user.role}
                   </span>
                 </td>
@@ -183,19 +191,8 @@ export const AdminPanel: React.FC = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <div className="flex space-x-4 mt-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="role" 
-                  value="user" 
-                  checked={role === 'user'}
-                  onChange={() => setRole('user')}
-                  className="text-primary-600 focus:ring-primary-500"
-                />
-                <span className="flex items-center"><UserIcon className="w-4 h-4 mr-1"/> User</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
+            <div className="flex flex-col space-y-2 mt-2">
+              <label className="flex items-center space-x-2 cursor-pointer p-2 border rounded-md hover:bg-gray-50">
                 <input 
                   type="radio" 
                   name="role" 
@@ -205,7 +202,40 @@ export const AdminPanel: React.FC = () => {
                   disabled={editingUser?.username === 'faisalhassan'} 
                   className="text-primary-600 focus:ring-primary-500"
                 />
-                <span className="flex items-center"><Shield className="w-4 h-4 mr-1"/> Admin</span>
+                <div className="flex flex-col">
+                  <span className="flex items-center font-medium text-sm text-gray-900"><Shield className="w-4 h-4 mr-1 text-purple-600"/> Administrator</span>
+                  <span className="text-xs text-gray-500 ml-5">Full system access (Create, Edit, Delete)</span>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-2 cursor-pointer p-2 border rounded-md hover:bg-gray-50">
+                <input 
+                  type="radio" 
+                  name="role" 
+                  value="mamdhoob" 
+                  checked={role === 'mamdhoob'}
+                  onChange={() => setRole('mamdhoob')}
+                  className="text-primary-600 focus:ring-primary-500"
+                />
+                <div className="flex flex-col">
+                  <span className="flex items-center font-medium text-sm text-gray-900"><Eye className="w-4 h-4 mr-1 text-blue-600"/> Mamdhoob</span>
+                  <span className="text-xs text-gray-500 ml-5">Can only mark voters as 'Voted'</span>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-2 cursor-pointer p-2 border rounded-md hover:bg-gray-50">
+                <input 
+                  type="radio" 
+                  name="role" 
+                  value="user" 
+                  checked={role === 'user'}
+                  onChange={() => setRole('user')}
+                  className="text-primary-600 focus:ring-primary-500"
+                />
+                <div className="flex flex-col">
+                  <span className="flex items-center font-medium text-sm text-gray-900"><UserIcon className="w-4 h-4 mr-1 text-green-600"/> Normal User</span>
+                  <span className="text-xs text-gray-500 ml-5">Read-only access</span>
+                </div>
               </label>
             </div>
           </div>
