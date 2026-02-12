@@ -3,14 +3,13 @@ import { User } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Lock, User as UserIcon, AlertCircle, Database, Shield } from 'lucide-react';
+import { Lock, User as UserIcon, AlertCircle, Database, Shield, Info } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
-  onForgotPassword: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }) => {
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,6 +20,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }
   const [setupRequired, setSetupRequired] = useState<'none' | 'create-admin' | 'db-error'>('none');
   const [dbErrorMessage, setDbErrorMessage] = useState('');
   
+  // Forgot Password Message State
+  const [showForgotMessage, setShowForgotMessage] = useState(false);
+
   // Create Admin Form State
   const [newAdminName, setNewAdminName] = useState('');
   const [newAdminUser, setNewAdminUser] = useState('');
@@ -56,6 +58,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onForgotPassword }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setShowForgotMessage(false);
     setIsLoading(true);
 
     try {
@@ -276,14 +279,6 @@ create policy "Public Access" on messages for all using (true) with check (true)
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                    {/* Fallback link in case setup check missed something or user wants to register */}
-                    <button 
-                        type="button"
-                        onClick={() => setSetupRequired('create-admin')}
-                        className="text-xs text-red-600 underline mt-1 hover:text-red-800"
-                    >
-                        Create Admin Account?
-                    </button>
                   </div>
                 </div>
               </div>
@@ -318,13 +313,26 @@ create policy "Public Access" on messages for all using (true) with check (true)
               <div className="text-sm">
                 <button
                   type="button"
-                  onClick={onForgotPassword}
+                  onClick={() => setShowForgotMessage(true)}
                   className="font-medium text-primary-600 hover:text-primary-500 focus:outline-none"
                 >
                   Forgot your password?
                 </button>
               </div>
             </div>
+
+            {showForgotMessage && (
+              <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Info className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">Please contact system admin!</h3>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <Button
