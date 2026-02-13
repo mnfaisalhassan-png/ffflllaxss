@@ -191,9 +191,12 @@ export const storageService = {
       .limit(limit);
 
     if (error) {
+      // Don't swallow error, propagate it so UI can detect missing table
       console.error('Error fetching messages:', error);
-      return [];
+      throw error;
     }
+
+    if (!data) return [];
 
     return data.reverse().map((m: any) => ({
       id: m.id,

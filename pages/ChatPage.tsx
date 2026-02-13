@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, ChatMessage } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
-import { Send, MessageSquare, RefreshCw } from 'lucide-react';
+import { Send, MessageSquare, RefreshCw, AlertTriangle, Terminal, Database } from 'lucide-react';
+import { Modal } from '../components/ui/Modal';
 
 interface ChatPageProps {
   currentUser: User;
@@ -13,25 +14,32 @@ export const ChatPage: React.FC<ChatPageProps> = ({ currentUser }) => {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [dbError, setDbError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = async () => {
     try {
       const data = await storageService.getMessages(50);
       setMessages(data);
-    } catch (error) {
+      setDbError(false);
+    } catch (error: any) {
       console.error("Failed to fetch messages", error);
+      if (error.code === '42P01' || (error.message && error.message.includes('relation "messages" does not exist'))) {
+        setDbError(true);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Poll for messages every 3 seconds
+  // Poll for messages every 3 seconds, but only if no DB error
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
+    const interval = setInterval(() => {
+        if (!dbError) fetchMessages();
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dbError]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -51,8 +59,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ currentUser }) => {
       await storageService.sendMessage(currentUser.id, currentUser.fullName, newMessage.trim());
       setNewMessage('');
       await fetchMessages(); // Immediate refresh
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to send message", error);
+      if (error.code === '42P01' || (error.message && error.message.includes('relation "messages" does not exist'))) {
+        setDbError(true);
+      }
     } finally {
       setIsSending(false);
     }
@@ -66,6 +77,45 @@ export const ChatPage: React.FC<ChatPageProps> = ({ currentUser }) => {
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
+
+  if (dbError) {
+      return (
+        <div className="flex flex-col h-[calc(100vh-6rem)] max-w-5xl mx-auto p-4 items-center justify-center">
+            <div className="bg-white p-8 rounded-xl shadow-md border border-red-200 max-w-2xl w-full text-center">
+                <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                    <Database className="h-8 w-8 text-red-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Chat System Unavailable</h2>
+                <p className="text-gray-600 mb-6">
+                    The messaging system has not been initialized in the database. 
+                    Please run the following command in your Supabase SQL Editor.
+                </p>
+                
+                <div className="bg-gray-800 rounded-md p-4 w-full relative group text-left mb-6">
+                    <div className="absolute top-2 right-2 text-xs text-gray-400 flex items-center">
+                        <Terminal className="w-3 h-3 mr-1" /> SQL
+                    </div>
+                    <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
+{`CREATE TABLE IF NOT EXISTS messages (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references users(id),
+  user_name text not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Access Messages" ON messages FOR ALL USING (true) WITH CHECK (true);`}
+                    </code>
+                </div>
+                
+                <Button onClick={() => fetchMessages()}>
+                    I've ran the SQL, Retry Connection
+                </Button>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] max-w-5xl mx-auto">
