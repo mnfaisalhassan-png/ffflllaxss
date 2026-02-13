@@ -136,10 +136,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   // Filtered List
   const filteredVoters = useMemo(() => {
     return voters.filter(v => {
+      const query = searchQuery.toLowerCase();
       const matchesSearch = 
-        v.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        v.idCardNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.island.toLowerCase().includes(searchQuery.toLowerCase());
+        v.fullName.toLowerCase().includes(query) || 
+        v.idCardNumber.toLowerCase().includes(query) ||
+        v.island.toLowerCase().includes(query) ||
+        (v.address && v.address.toLowerCase().includes(query));
       
       const matchesFilter = 
         filterStatus === 'all' ? true :
@@ -419,7 +421,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                         <input 
                             type="text"
                             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                            placeholder="Search by name, ID card, or island..."
+                            placeholder="Search by name, ID, island, or address..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                         />
@@ -475,13 +477,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">{voter.fullName}</div>
                                                 <div className="text-sm text-gray-500 font-mono">{voter.idCardNumber}</div>
+                                                {voter.address && (
+                                                    <div className="text-xs text-gray-400 mt-1 md:hidden">
+                                                        <MapPin className="h-3 w-3 inline mr-1" />
+                                                        {voter.address}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center text-sm text-gray-700">
-                                            <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                                            {voter.island}
+                                        <div className="flex flex-col text-sm text-gray-700">
+                                            <div className="flex items-center">
+                                                <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                                                {voter.island}
+                                            </div>
+                                            {voter.address && (
+                                                <span className="text-xs text-gray-500 ml-5 truncate max-w-[150px]" title={voter.address}>
+                                                    {voter.address}
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -542,8 +557,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                     </tbody>
                  </table>
              </div>
-             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500">
-                 Showing {filteredVoters.length} records
+             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between items-center">
+                 <div>
+                     {filteredVoters.length === voters.length ? (
+                         <span>Total Registered Voters: <strong>{voters.length}</strong></span>
+                     ) : (
+                         <span>
+                             Showing <strong>{filteredVoters.length}</strong> results 
+                             <span className="text-gray-400 mx-1">/</span> 
+                             {voters.length} Total
+                         </span>
+                     )}
+                 </div>
              </div>
           </div>
       )}

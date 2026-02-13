@@ -93,7 +93,8 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         return (
             v.fullName.toLowerCase().includes(q) ||
             v.idCardNumber.toLowerCase().includes(q) ||
-            v.island.toLowerCase().includes(q)
+            v.island.toLowerCase().includes(q) ||
+            (v.address && v.address.toLowerCase().includes(q))
         );
     }
     return true;
@@ -179,7 +180,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                     <input 
                         type="text"
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                        placeholder="Search by name, ID card, or island..."
+                        placeholder="Search by name, ID card, island, or address..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         autoFocus
@@ -217,6 +218,12 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">{voter.fullName}</div>
                                                 <div className="text-sm text-gray-500 font-mono">{voter.idCardNumber}</div>
+                                                {voter.address && (
+                                                    <div className="flex items-center text-xs text-gray-400 mt-1">
+                                                        <MapPin className="h-3 w-3 mr-1" />
+                                                        {voter.address}
+                                                    </div>
+                                                )}
                                                 {voter.phoneNumber && (
                                                     <div className="flex items-center text-xs text-gray-400 mt-1 md:hidden">
                                                         <Phone className="h-3 w-3 mr-1" />

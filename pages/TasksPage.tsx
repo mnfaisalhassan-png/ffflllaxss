@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { 
   ClipboardList, Plus, CheckCircle, Circle, 
   Trash2, User as UserIcon, Calendar, 
-  Database, Terminal, AlertTriangle
+  Database, Terminal, AlertTriangle, Shield
 } from 'lucide-react';
 
 interface TasksPageProps {
@@ -26,6 +26,10 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [assignedUserId, setAssignedUserId] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  
+  // Delete State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   
   // Error / Setup State
   const [dbError, setDbError] = useState(false);
@@ -48,7 +52,15 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
     } catch (e: any) {
       console.error("Fetch Tasks Error:", e);
       // Detection for missing table (code 42P01 is Postgres 'undefined_table')
-      if (e.code === '42P01' || (e.message && e.message.includes('relation "tasks" does not exist'))) {
+      // Also catch PostgREST schema cache errors
+      if (
+        e.code === '42P01' || 
+        (e.message && (
+            e.message.includes('relation "tasks" does not exist') || 
+            e.message.includes('Could not find the table') || 
+            e.message.includes('schema cache')
+        ))
+      ) {
           setDbError(true);
       } else {
           setErrorMsg("Failed to load tasks.");
@@ -113,6 +125,17 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
       // Show the actual database error if available for better debugging
       const msg = e.message || "Failed to save task.";
       
+      // If table is missing or schema issue, trigger db setup view
+      if (
+        msg.includes('Could not find the table') || 
+        msg.includes('schema cache') || 
+        msg.includes('relation "tasks" does not exist')
+      ) {
+          setDbError(true);
+          setIsModalOpen(false);
+          return;
+      }
+      
       if (msg.includes('foreign key constraint')) {
          setFormError("Database Error: User ID not found. Try signing out and back in.");
       } else {
@@ -130,8 +153,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
   };
 
   const handleToggleStatus = async (task: Task) => {
-    // Users can only toggle their own tasks. Admins can toggle any.
-    if (!isAdmin && task.assignedToUserId !== currentUser.id) return;
+    // Only the assigned user can toggle status
+    if (task.assignedToUserId !== currentUser.id) return;
 
     try {
       const newStatus = task.status === 'pending' ? 'completed' : 'pending';
@@ -146,13 +169,20 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const initiateDeleteTask = (taskId: string) => {
     if (!isAdmin) return;
-    if (!confirm("Delete this task permanently?")) return;
+    setTaskToDelete(taskId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete || !isAdmin) return;
 
     try {
-      await storageService.deleteTask(taskId);
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      await storageService.deleteTask(taskToDelete);
+      setTasks(prev => prev.filter(t => t.id !== taskToDelete));
+      setIsDeleteModalOpen(false);
+      setTaskToDelete(null);
     } catch (e) {
       alert("Failed to delete task");
     }
@@ -168,8 +198,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Task System Unavailable</h2>
                 <p className="text-gray-600 mb-6">
-                    The tasks table has not been initialized in the database. 
-                    Please run the following command in your Supabase SQL Editor.
+                    The <code>tasks</code> table was not found in the database. <br/>
+                    Please run the SQL below in your Supabase SQL Editor to initialize it.
                 </p>
                 
                 <div className="bg-gray-800 rounded-md p-4 w-full relative group text-left mb-6">
@@ -188,7 +218,10 @@ export const TasksPage: React.FC<TasksPageProps> = ({ currentUser }) => {
 );
 
 alter table tasks enable row level security;
-create policy "Public Access Tasks" on tasks for all using (true) with check (true);`}
+create policy "Public Access Tasks" on tasks for all using (true) with check (true);
+
+-- If you still see the error, try reloading the Supabase schema cache
+-- by going to Project Settings > API > Reload Schema.`}
                     </code>
                 </div>
                 
@@ -235,67 +268,74 @@ create policy "Public Access Tasks" on tasks for all using (true) with check (tr
             </div>
         ) : (
             <div className="divide-y divide-gray-200">
-                {tasks.map(task => (
-                    <div key={task.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center group">
-                        <div className="flex items-start space-x-4 flex-1">
-                            <button 
-                                onClick={() => handleToggleStatus(task)}
-                                className={`flex-shrink-0 mt-1 transition-colors ${
-                                    task.status === 'completed' 
-                                    ? 'text-green-500 hover:text-green-600' 
-                                    : 'text-gray-300 hover:text-primary-500'
-                                }`}
-                            >
-                                {task.status === 'completed' ? (
-                                    <CheckCircle className="h-6 w-6" />
-                                ) : (
-                                    <Circle className="h-6 w-6" />
-                                )}
-                            </button>
-                            <div>
-                                <h3 className={`text-lg font-medium ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                                    {task.title}
-                                </h3>
-                                {task.description && (
-                                    <p className="text-gray-500 text-sm mt-1">{task.description}</p>
-                                )}
-                                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
-                                    <span className="flex items-center">
-                                        <Calendar className="h-3 w-3 mr-1" />
-                                        {new Date(task.createdAt).toLocaleDateString()}
-                                    </span>
-                                    {isAdmin && (
-                                        <span className="flex items-center bg-gray-100 px-2 py-0.5 rounded-full">
-                                            <UserIcon className="h-3 w-3 mr-1" />
-                                            Assigned to: <span className="font-medium ml-1 text-gray-600">{task.assignedToName || 'Unknown'}</span>
+                {tasks.map(task => {
+                    const isAssignedToMe = task.assignedToUserId === currentUser.id;
+                    return (
+                        <div key={task.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center group">
+                            <div className="flex items-start space-x-4 flex-1">
+                                <button 
+                                    onClick={() => handleToggleStatus(task)}
+                                    disabled={!isAssignedToMe}
+                                    title={!isAssignedToMe ? "Only the assigned member can complete this task" : "Toggle status"}
+                                    className={`flex-shrink-0 mt-1 transition-colors ${
+                                        !isAssignedToMe ? 'opacity-40 cursor-not-allowed' : 'hover:text-primary-500'
+                                    } ${
+                                        task.status === 'completed' 
+                                        ? 'text-green-500 hover:text-green-600' 
+                                        : 'text-gray-300'
+                                    }`}
+                                >
+                                    {task.status === 'completed' ? (
+                                        <CheckCircle className="h-6 w-6" />
+                                    ) : (
+                                        <Circle className="h-6 w-6" />
+                                    )}
+                                </button>
+                                <div>
+                                    <h3 className={`text-lg font-medium ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                        {task.title}
+                                    </h3>
+                                    {task.description && (
+                                        <p className="text-gray-500 text-sm mt-1">{task.description}</p>
+                                    )}
+                                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
+                                        <span className="flex items-center">
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            {new Date(task.createdAt).toLocaleDateString()}
                                         </span>
-                                    )}
-                                    {!isAdmin && task.assignedByName && (
-                                         <span className="flex items-center">
-                                            By: {task.assignedByName}
-                                         </span>
-                                    )}
+                                        {isAdmin && (
+                                            <span className="flex items-center bg-gray-100 px-2 py-0.5 rounded-full">
+                                                <UserIcon className="h-3 w-3 mr-1" />
+                                                Assigned to: <span className="font-medium ml-1 text-gray-600">{task.assignedToName || 'Unknown'}</span>
+                                            </span>
+                                        )}
+                                        {!isAdmin && task.assignedByName && (
+                                             <span className="flex items-center">
+                                                By: {task.assignedByName}
+                                             </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                            <div className="flex items-center space-x-2 pl-10 sm:pl-0">
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                                    task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                    {task.status}
+                                </span>
+                                {isAdmin && (
+                                    <button 
+                                        onClick={() => initiateDeleteTask(task.id)}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Delete Task"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex items-center space-x-2 pl-10 sm:pl-0">
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                                task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                                {task.status}
-                            </span>
-                            {isAdmin && (
-                                <button 
-                                    onClick={() => handleDeleteTask(task.id)}
-                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Delete Task"
-                                >
-                                    <Trash2 className="h-5 w-5" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         )}
       </div>
@@ -368,6 +408,43 @@ create policy "Public Access Tasks" on tasks for all using (true) with check (tr
                 {!assignedUserId && formError && <p className="mt-1 text-sm text-red-600">Please select a user</p>}
             </div>
         </div>
+      </Modal>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Confirm Deletion"
+        footer={
+            <>
+                <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+                <Button variant="danger" onClick={confirmDeleteTask}>Delete Task</Button>
+            </>
+        }
+      >
+          <div className="flex items-start">
+             <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <Trash2 className="h-6 w-6 text-red-600" />
+             </div>
+             <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Delete this task?
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to delete this task? This action cannot be undone.
+                  </p>
+                  <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-2">
+                     <div className="flex">
+                        <Shield className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" />
+                        <span className="text-xs text-yellow-800 font-medium pt-0.5">
+                            Only administrators have the right to delete tasks.
+                        </span>
+                     </div>
+                  </div>
+                </div>
+             </div>
+          </div>
       </Modal>
     </div>
   );
