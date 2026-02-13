@@ -223,6 +223,11 @@ export const storageService = {
     if (error) throw error;
   },
 
+  deleteMessage: async (messageId: string) => {
+    const { error } = await supabase.from('messages').delete().eq('id', messageId);
+    if (error) throw error;
+  },
+
   // --- TASKS (Supabase) ---
 
   getTasks: async (): Promise<Task[]> => {
