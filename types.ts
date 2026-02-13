@@ -12,8 +12,9 @@ export interface User {
 
 export interface VoterRecord {
   id: string;
-  idCardNumber: string; // Must start with A-
+  idCardNumber: string; // Must start with A
   fullName: string;
+  gender?: 'Male' | 'Female';
   address: string;
   island: string;
   phoneNumber?: string;

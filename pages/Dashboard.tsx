@@ -38,6 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   // Form Fields
   const [idCardNumber, setIdCardNumber] = useState('');
   const [fullName, setFullName] = useState('');
+  const [gender, setGender] = useState('');
   const [address, setAddress] = useState('');
   const [island, setIsland] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -158,6 +159,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setSelectedVoterId(null);
     setIdCardNumber('');
     setFullName('');
+    setGender('');
     setAddress('');
     setIsland(islands[0] || '');
     setPhoneNumber('');
@@ -175,6 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setSelectedVoterId(voter.id);
     setIdCardNumber(voter.idCardNumber);
     setFullName(voter.fullName);
+    setGender(voter.gender || '');
     setAddress(voter.address);
     setIsland(voter.island);
     setPhoneNumber(voter.phoneNumber || '');
@@ -212,14 +215,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     // If not admin, we don't really need to validate these fields as they can't change them
     // But good to keep sanity check
     if (canEditDetails) {
-        if (!idCardNumber.startsWith('A-')) {
-            newErrors.idCardNumber = 'ID Card Number must start with "A-"';
+        if (!idCardNumber.startsWith('A')) {
+            newErrors.idCardNumber = 'ID Card Number must start with "A"';
         } else if (idCardNumber.length < 3) {
             newErrors.idCardNumber = 'ID Card Number is too short';
         }
 
         if (!fullName.trim()) {
             newErrors.fullName = 'Full Name cannot be empty';
+        }
+
+        if (!gender) {
+            newErrors.gender = 'Gender is required';
         }
 
         if (!address.trim()) {
@@ -236,6 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
         const commonData = {
             idCardNumber,
             fullName,
+            gender: (gender as 'Male' | 'Female') || undefined,
             address,
             island,
             phoneNumber,
@@ -273,7 +281,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     } catch (error: any) {
         console.error(error);
         // Error code 42703 is undefined_column in Postgres
-        if (error.code === '42703' || (error.message && (error.message.includes('notes') || error.message.includes('communicated')))) {
+        const errMsg = error.message || '';
+        if (error.code === '42703' || errMsg.includes('notes') || errMsg.includes('communicated') || errMsg.includes('gender')) {
             setShowColumnError(true);
             setShowSaveConfirm(false);
         } else {
@@ -476,7 +485,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                         <div className="flex items-center">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">{voter.fullName}</div>
-                                                <div className="text-sm text-gray-500 font-mono">{voter.idCardNumber}</div>
+                                                <div className="text-sm text-gray-500 font-mono flex items-center gap-2">
+                                                    {voter.idCardNumber}
+                                                    {voter.gender && (
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                                                            voter.gender === 'Male' 
+                                                            ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                                            : 'bg-pink-50 text-pink-700 border-pink-200'
+                                                        }`}>
+                                                            {voter.gender}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {voter.address && (
                                                     <div className="text-xs text-gray-400 mt-1 md:hidden">
                                                         <MapPin className="h-3 w-3 inline mr-1" />
@@ -640,22 +660,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <Input 
                                 label="ID Card Number" 
-                                placeholder="A-XXXXXX" 
+                                placeholder="AXXXXXX" 
                                 value={idCardNumber} 
                                 onChange={e => setIdCardNumber(e.target.value)}
                                 error={errors.idCardNumber}
                                 icon={<div className="text-gray-400 text-xs font-bold pt-0.5">ID</div>}
                                 disabled={!canEditDetails}
                             />
-                            <Input 
-                                label="Full Name" 
-                                placeholder="Enter full name" 
-                                value={fullName} 
-                                onChange={e => setFullName(e.target.value)}
-                                error={errors.fullName}
-                                icon={<UserIcon className="h-4 w-4 text-gray-400" />}
-                                disabled={!canEditDetails}
-                            />
+                            
+                            <div className="sm:col-span-1">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                <select 
+                                    className={`block w-full border-2 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${
+                                        errors.gender 
+                                        ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' 
+                                        : 'border-black focus:ring-primary-500 focus:border-primary-500'
+                                    } ${!canEditDetails ? 'opacity-60 bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                                    value={gender}
+                                    onChange={e => {
+                                        setGender(e.target.value);
+                                        if (errors.gender) {
+                                            const newErrs = {...errors};
+                                            delete newErrs.gender;
+                                            setErrors(newErrs);
+                                        }
+                                    }}
+                                    disabled={!canEditDetails}
+                                >
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                                {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender}</p>}
+                            </div>
+
+                            <div className="sm:col-span-2">
+                                <Input 
+                                    label="Full Name" 
+                                    placeholder="Enter full name" 
+                                    value={fullName} 
+                                    onChange={e => setFullName(e.target.value)}
+                                    error={errors.fullName}
+                                    icon={<UserIcon className="h-4 w-4 text-gray-400" />}
+                                    disabled={!canEditDetails}
+                                />
+                            </div>
                             
                             <div className="sm:col-span-2">
                                 <Input 
@@ -877,6 +926,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                     <div className="grid grid-cols-2 gap-2 text-xs">
                         <div><span className="text-gray-500">Name:</span> {fullName}</div>
                         <div><span className="text-gray-500">ID:</span> {idCardNumber}</div>
+                        <div><span className="text-gray-500">Gender:</span> {gender || '-'}</div>
                         <div><span className="text-gray-500">Party:</span> {registrarParty}</div>
                         <div><span className="text-gray-500">Sheema:</span> {sheema ? 'Yes' : 'No'}</div>
                         <div><span className="text-gray-500">Sadiq:</span> {sadiq ? 'Yes' : 'No'}</div>
@@ -1052,7 +1102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Database Columns</h3>
             <p className="text-sm text-gray-600 text-center mb-4">
-                The database is missing required columns (e.g., 'communicated' or 'notes'). <br/>
+                The database is missing required columns (e.g., 'gender', 'communicated' or 'notes'). <br/>
                 Please run the following command in your Supabase SQL Editor to enable this feature.
             </p>
             
@@ -1062,7 +1112,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                 </div>
                 <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
 {`ALTER TABLE voters ADD COLUMN IF NOT EXISTS notes text;
-ALTER TABLE voters ADD COLUMN IF NOT EXISTS communicated boolean default false;`}
+ALTER TABLE voters ADD COLUMN IF NOT EXISTS communicated boolean default false;
+ALTER TABLE voters ADD COLUMN IF NOT EXISTS gender text;`}
                 </code>
             </div>
           </div>

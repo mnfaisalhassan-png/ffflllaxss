@@ -96,6 +96,7 @@ export const storageService = {
       id: v.id,
       idCardNumber: v.id_card_number,
       fullName: v.full_name,
+      gender: v.gender,
       address: v.address,
       island: v.island,
       phoneNumber: v.phone_number,
@@ -114,6 +115,7 @@ export const storageService = {
     const { error } = await supabase.from('voters').insert([{
       id_card_number: voter.idCardNumber,
       full_name: voter.fullName,
+      gender: voter.gender,
       address: voter.address,
       island: voter.island,
       phone_number: voter.phoneNumber,
@@ -132,6 +134,7 @@ export const storageService = {
     const { error } = await supabase.from('voters').update({
       id_card_number: voter.idCardNumber,
       full_name: voter.fullName,
+      gender: voter.gender,
       address: voter.address,
       island: voter.island,
       phone_number: voter.phoneNumber,
