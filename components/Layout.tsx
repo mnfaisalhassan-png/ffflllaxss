@@ -8,7 +8,8 @@ import {
   FileText,
   User as UserIcon,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  ClipboardList
 } from 'lucide-react';
 import { User, PageView } from '../types';
 
@@ -63,6 +64,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <nav className="mt-2 flex-1 px-2 space-y-1">
             <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />
             <NavItem page="dashboard" icon={Users} label="Voting Registration" />
+            <NavItem page="tasks" icon={ClipboardList} label="Task Management" />
             <NavItem page="chat" icon={MessageSquare} label="Community Chat" />
             <NavItem page="profile" icon={UserIcon} label="My Profile" />
             {user.role === 'admin' && (
@@ -121,6 +123,7 @@ export const Layout: React.FC<LayoutProps> = ({
               <nav className="space-y-1">
                 <NavItem page="voting-status" icon={BarChart3} label="Voting Status" />
                 <NavItem page="dashboard" icon={Users} label="Voting Registration" />
+                <NavItem page="tasks" icon={ClipboardList} label="Task Management" />
                 <NavItem page="chat" icon={MessageSquare} label="Community Chat" />
                 <NavItem page="profile" icon={UserIcon} label="My Profile" />
                 {user.role === 'admin' && (

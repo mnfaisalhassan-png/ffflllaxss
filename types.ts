@@ -21,6 +21,7 @@ export interface VoterRecord {
   registrarParty?: string;
   sheema?: boolean;
   sadiq?: boolean;
+  communicated?: boolean;
   notes?: string;
   createdAt: number;
   updatedAt: number;
@@ -34,4 +35,17 @@ export interface ChatMessage {
   createdAt: number;
 }
 
-export type PageView = 'login' | 'dashboard' | 'admin-panel' | 'forgot-password' | 'profile' | 'voting-status' | 'chat';
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  assignedToUserId: string;
+  assignedByUserId: string; // Admin who created it
+  status: 'pending' | 'completed';
+  createdAt: number;
+  // Joins (filled optionally)
+  assignedToName?: string;
+  assignedByName?: string;
+}
+
+export type PageView = 'login' | 'dashboard' | 'admin-panel' | 'forgot-password' | 'profile' | 'voting-status' | 'chat' | 'tasks';

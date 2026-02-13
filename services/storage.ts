@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { STORAGE_KEYS, ISLANDS, DEFAULT_PARTIES, ADMIN_CREDENTIALS } from '../constants';
-import { User, VoterRecord, ChatMessage } from '../types';
+import { User, VoterRecord, ChatMessage, Task } from '../types';
 
 // Supabase Configuration
 const SUPABASE_URL = 'https://hrvljfayyfmvoywiklgk.supabase.co';
@@ -103,6 +103,7 @@ export const storageService = {
       registrarParty: v.registrar_party,
       sheema: v.sheema,
       sadiq: v.sadiq,
+      communicated: v.communicated,
       notes: v.notes,
       createdAt: new Date(v.created_at).getTime(),
       updatedAt: v.updated_at ? new Date(v.updated_at).getTime() : Date.now()
@@ -120,6 +121,7 @@ export const storageService = {
       registrar_party: voter.registrarParty,
       sheema: voter.sheema,
       sadiq: voter.sadiq,
+      communicated: voter.communicated,
       notes: voter.notes,
       created_at: new Date().toISOString()
     }]);
@@ -137,6 +139,7 @@ export const storageService = {
       registrar_party: voter.registrarParty,
       sheema: voter.sheema,
       sadiq: voter.sadiq,
+      communicated: voter.communicated,
       notes: voter.notes,
       updated_at: new Date().toISOString()
     }).eq('id', voter.id);
@@ -194,7 +197,6 @@ export const storageService = {
       .limit(limit);
 
     if (error) {
-      // Don't swallow error, propagate it so UI can detect missing table
       console.error('Error fetching messages:', error);
       throw error;
     }
@@ -218,6 +220,61 @@ export const storageService = {
       created_at: new Date().toISOString()
     }]);
     
+    if (error) throw error;
+  },
+
+  // --- TASKS (Supabase) ---
+
+  getTasks: async (): Promise<Task[]> => {
+    // We join with users to get the assigned_to name easily
+    // Note: Supabase automatically handles foreign key joins if relationships are set up, 
+    // but here we might just fetch raw and map IDs if we don't want to complexify the join query.
+    // For simplicity, we fetch tasks and rely on manual mapping or a simple join if column names match.
+    
+    // Using a simple fetch and we will map user names in the component or via a simple join syntax:
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        assigned_to_user:users!tasks_assigned_to_fkey(full_name),
+        assigned_by_user:users!tasks_assigned_by_fkey(full_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      assignedToUserId: t.assigned_to,
+      assignedByUserId: t.assigned_by,
+      status: t.status,
+      createdAt: new Date(t.created_at).getTime(),
+      assignedToName: t.assigned_to_user?.full_name,
+      assignedByName: t.assigned_by_user?.full_name
+    }));
+  },
+
+  createTask: async (task: Partial<Task>) => {
+    const { error } = await supabase.from('tasks').insert([{
+      title: task.title,
+      description: task.description,
+      assigned_to: task.assignedToUserId,
+      assigned_by: task.assignedByUserId,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }]);
+    if (error) throw error;
+  },
+
+  updateTaskStatus: async (taskId: string, status: 'pending' | 'completed') => {
+    const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId);
+    if (error) throw error;
+  },
+
+  deleteTask: async (taskId: string) => {
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
     if (error) throw error;
   }
 };

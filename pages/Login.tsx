@@ -157,6 +157,7 @@ create table if not exists voters (
   registrar_party text,
   sheema boolean default false,
   sadiq boolean default false,
+  communicated boolean default false,
   notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -180,18 +181,30 @@ create table if not exists messages (
   created_at timestamptz default now()
 );
 
+create table if not exists tasks (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  assigned_to uuid references users(id),
+  assigned_by uuid references users(id),
+  status text default 'pending',
+  created_at timestamptz default now()
+);
+
 -- Basic Policies (Adjust for production)
 alter table users enable row level security;
 alter table voters enable row level security;
 alter table islands enable row level security;
 alter table parties enable row level security;
 alter table messages enable row level security;
+alter table tasks enable row level security;
 
 create policy "Public Access Users" on users for all using (true) with check (true);
 create policy "Public Access Voters" on voters for all using (true) with check (true);
 create policy "Public Access Islands" on islands for all using (true) with check (true);
 create policy "Public Access Parties" on parties for all using (true) with check (true);
-create policy "Public Access Messages" on messages for all using (true) with check (true);`}
+create policy "Public Access Messages" on messages for all using (true) with check (true);
+create policy "Public Access Tasks" on tasks for all using (true) with check (true);`}
                         </code>
                     </div>
                     <div className="text-center">

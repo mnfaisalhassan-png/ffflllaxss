@@ -10,7 +10,7 @@ import {
   CheckCircle, XCircle, MapPin, Filter, 
   User as UserIcon, AlertTriangle, Flag, 
   CheckSquare, Info, Settings, X, ArrowLeft, ChevronRight,
-  ShieldCheck, Eye, Terminal, Database
+  ShieldCheck, Eye, Terminal, Database, MessageCircle
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -47,6 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   const [registrarParty, setRegistrarParty] = useState('');
   const [sheema, setSheema] = useState(false);
   const [sadiq, setSadiq] = useState(false);
+  const [communicated, setCommunicated] = useState(false);
   const [notes, setNotes] = useState('');
 
   // Validation & Modals
@@ -162,6 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setRegistrarParty(parties[0] || '');
     setSheema(false);
     setSadiq(false);
+    setCommunicated(false);
     setNotes('');
     setErrors({});
   };
@@ -178,6 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setRegistrarParty(voter.registrarParty || parties[0] || '');
     setSheema(voter.sheema || false);
     setSadiq(voter.sadiq || false);
+    setCommunicated(voter.communicated || false);
     setNotes(voter.notes || '');
     setErrors({});
     setViewMode('form'); // Switch to form view
@@ -238,6 +241,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             registrarParty,
             sheema,
             sadiq,
+            communicated,
             notes,
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -266,7 +270,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
 
     } catch (error: any) {
         console.error(error);
-        if (error.code === '42703' || (error.message && error.message.includes('notes'))) {
+        // Error code 42703 is undefined_column in Postgres
+        if (error.code === '42703' || (error.message && (error.message.includes('notes') || error.message.includes('communicated')))) {
             setShowColumnError(true);
             setShowSaveConfirm(false);
         } else {
@@ -502,6 +507,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                                     Sadiq
                                                 </span>
                                             )}
+                                            {voter.communicated && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                                                    Communicated
+                                                </span>
+                                            )}
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-100">
                                                 {voter.registrarParty || 'Independent'}
                                             </span>
@@ -569,6 +579,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                         {sadiq && (
                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
                                 Sadiq
+                             </span>
+                        )}
+                         {communicated && (
+                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                                Communicated
                              </span>
                         )}
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${hasVoted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -717,7 +732,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                 />
                             </div>
 
-                            <div className="sm:col-span-2 pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="sm:col-span-2 pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <label className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors cursor-pointer hover:bg-gray-50 ${!canEditDetails ? 'opacity-60 cursor-not-allowed' : ''}`}>
                                     <input 
                                         type="checkbox" 
@@ -743,6 +758,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                     />
                                     <div>
                                         <span className="text-sm font-medium text-gray-900 block">Sadiq</span>
+                                    </div>
+                                </label>
+
+                                <label className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors cursor-pointer hover:bg-gray-50 ${!canEditDetails ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="communicated" 
+                                        checked={communicated} 
+                                        onChange={e => setCommunicated(e.target.checked)}
+                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                        disabled={!canEditDetails}
+                                    />
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">Communicated</span>
                                     </div>
                                 </label>
 
@@ -826,6 +855,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                         <div><span className="text-gray-500">Party:</span> {registrarParty}</div>
                         <div><span className="text-gray-500">Sheema:</span> {sheema ? 'Yes' : 'No'}</div>
                         <div><span className="text-gray-500">Sadiq:</span> {sadiq ? 'Yes' : 'No'}</div>
+                        <div><span className="text-gray-500">Communicated:</span> {communicated ? 'Yes' : 'No'}</div>
                         {notes && (
                             <div className="col-span-2 text-gray-500 italic mt-1 border-t pt-1">
                                 Note: {notes.length > 50 ? notes.substring(0, 50) + '...' : notes}
@@ -995,9 +1025,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             <div className="bg-orange-100 p-3 rounded-full mb-4">
                 <AlertTriangle className="h-8 w-8 text-orange-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Notes Field</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Database Columns</h3>
             <p className="text-sm text-gray-600 text-center mb-4">
-                The database is missing the 'notes' column. <br/>
+                The database is missing required columns (e.g., 'communicated' or 'notes'). <br/>
                 Please run the following command in your Supabase SQL Editor to enable this feature.
             </p>
             
@@ -1006,7 +1036,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                     <Terminal className="w-3 h-3 mr-1" /> SQL
                 </div>
                 <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
-{`ALTER TABLE voters ADD COLUMN IF NOT EXISTS notes text;`}
+{`ALTER TABLE voters ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE voters ADD COLUMN IF NOT EXISTS communicated boolean default false;`}
                 </code>
             </div>
           </div>
