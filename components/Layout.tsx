@@ -50,8 +50,13 @@ export const Layout: React.FC<LayoutProps> = ({
     );
   };
 
+  const getMainBackground = () => {
+    if (activePage === 'voting-status') return 'bg-pink-50';
+    return 'bg-sky-100';
+  };
+
   return (
-    <div className="min-h-screen bg-sky-100 flex">
+    <div className={`min-h-screen ${getMainBackground()} flex`}>
       {/* Sidebar for Desktop */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-green-50">
         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
