@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'user' | 'mamdhoob';
 
 export interface User {
@@ -20,6 +21,7 @@ export interface VoterRecord {
   registrarParty?: string;
   sheema?: boolean;
   sadiq?: boolean;
+  notes?: string;
   createdAt: number;
   updatedAt: number;
 }

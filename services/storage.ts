@@ -103,6 +103,7 @@ export const storageService = {
       registrarParty: v.registrar_party,
       sheema: v.sheema,
       sadiq: v.sadiq,
+      notes: v.notes,
       createdAt: new Date(v.created_at).getTime(),
       updatedAt: v.updated_at ? new Date(v.updated_at).getTime() : Date.now()
     }));
@@ -119,6 +120,7 @@ export const storageService = {
       registrar_party: voter.registrarParty,
       sheema: voter.sheema,
       sadiq: voter.sadiq,
+      notes: voter.notes,
       created_at: new Date().toISOString()
     }]);
     if (error) throw error;
@@ -135,6 +137,7 @@ export const storageService = {
       registrar_party: voter.registrarParty,
       sheema: voter.sheema,
       sadiq: voter.sadiq,
+      notes: voter.notes,
       updated_at: new Date().toISOString()
     }).eq('id', voter.id);
     if (error) throw error;

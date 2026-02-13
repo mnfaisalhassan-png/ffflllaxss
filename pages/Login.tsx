@@ -157,6 +157,7 @@ create table if not exists voters (
   registrar_party text,
   sheema boolean default false,
   sadiq boolean default false,
+  notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

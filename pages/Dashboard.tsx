@@ -3,13 +3,14 @@ import { User, VoterRecord } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { TextArea } from '../components/ui/TextArea';
 import { Modal } from '../components/ui/Modal';
 import { 
   Search, Plus, Save, Trash2, Edit2, 
   CheckCircle, XCircle, MapPin, Filter, 
   User as UserIcon, AlertTriangle, Flag, 
   CheckSquare, Info, Settings, X, ArrowLeft, ChevronRight,
-  ShieldCheck, Eye
+  ShieldCheck, Eye, Terminal, Database
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -46,6 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   const [registrarParty, setRegistrarParty] = useState('');
   const [sheema, setSheema] = useState(false);
   const [sadiq, setSadiq] = useState(false);
+  const [notes, setNotes] = useState('');
 
   // Validation & Modals
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,6 +70,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   const [manageTarget, setManageTarget] = useState<'island' | 'party' | null>(null);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [editingItemValue, setEditingItemValue] = useState('');
+
+  // Database Column Error State
+  const [showColumnError, setShowColumnError] = useState(false);
 
   // --- PERMISSIONS LOGIC ---
   const isAdmin = currentUser.role === 'admin';
@@ -157,6 +162,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setRegistrarParty(parties[0] || '');
     setSheema(false);
     setSadiq(false);
+    setNotes('');
     setErrors({});
   };
 
@@ -172,6 +178,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setRegistrarParty(voter.registrarParty || parties[0] || '');
     setSheema(voter.sheema || false);
     setSadiq(voter.sadiq || false);
+    setNotes(voter.notes || '');
     setErrors({});
     setViewMode('form'); // Switch to form view
   };
@@ -231,6 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             registrarParty,
             sheema,
             sadiq,
+            notes,
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -243,9 +251,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             setNotification({ msg: 'Record created successfully!', type: 'success' });
         } else if (formMode === 'edit') {
              if (selectedVoterId) {
-                 // Fetch original to preserve uneditable fields if needed, 
-                 // but since we populate state on load, sending state back is fine 
-                 // as long as disabled inputs are still in state.
                  await storageService.updateVoter({
                     id: selectedVoterId,
                     ...commonData
@@ -259,12 +264,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
         setViewMode('list');
         resetForm();
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        setNotification({ msg: 'Error saving record', type: 'error' });
+        if (error.code === '42703' || (error.message && error.message.includes('notes'))) {
+            setShowColumnError(true);
+            setShowSaveConfirm(false);
+        } else {
+            setNotification({ msg: 'Error saving record', type: 'error' });
+        }
     }
     
-    setTimeout(() => setNotification(null), 3000);
+    if (!showColumnError) {
+        setTimeout(() => setNotification(null), 3000);
+    }
   };
 
   const handleDeleteClick = (idToDelete?: string) => {
@@ -748,6 +760,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                                     </div>
                                 </label>
                             </div>
+
+                            <div className="sm:col-span-2">
+                                <TextArea
+                                    label="Notes & Observations"
+                                    placeholder="Enter any additional details about the voter..."
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    disabled={!canEditDetails}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -804,6 +826,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                         <div><span className="text-gray-500">Party:</span> {registrarParty}</div>
                         <div><span className="text-gray-500">Sheema:</span> {sheema ? 'Yes' : 'No'}</div>
                         <div><span className="text-gray-500">Sadiq:</span> {sadiq ? 'Yes' : 'No'}</div>
+                        {notes && (
+                            <div className="col-span-2 text-gray-500 italic mt-1 border-t pt-1">
+                                Note: {notes.length > 50 ? notes.substring(0, 50) + '...' : notes}
+                            </div>
+                        )}
                         <div className="col-span-2 text-center mt-2 border-t pt-2 font-semibold">
                             Status: <span className={hasVoted ? 'text-green-600' : 'text-yellow-600'}>{hasVoted ? 'Voted' : 'Eligible'}</span>
                         </div>
@@ -955,6 +982,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
             </div>
       </Modal>
 
+      {/* Database Column Error Modal */}
+      <Modal
+        isOpen={showColumnError}
+        onClose={() => setShowColumnError(false)}
+        title="Database Update Required"
+        footer={
+            <Button onClick={() => setShowColumnError(false)}>Close</Button>
+        }
+      >
+          <div className="flex flex-col items-center justify-center p-2">
+            <div className="bg-orange-100 p-3 rounded-full mb-4">
+                <AlertTriangle className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Missing Notes Field</h3>
+            <p className="text-sm text-gray-600 text-center mb-4">
+                The database is missing the 'notes' column. <br/>
+                Please run the following command in your Supabase SQL Editor to enable this feature.
+            </p>
+            
+            <div className="bg-gray-800 rounded-md p-4 w-full relative group">
+                <div className="absolute top-2 right-2 text-xs text-gray-400 flex items-center">
+                    <Terminal className="w-3 h-3 mr-1" /> SQL
+                </div>
+                <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
+{`ALTER TABLE voters ADD COLUMN IF NOT EXISTS notes text;`}
+                </code>
+            </div>
+          </div>
+      </Modal>
     </div>
   );
 };
