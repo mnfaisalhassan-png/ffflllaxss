@@ -157,7 +157,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                     <Button 
                         variant="secondary" 
                         onClick={handleBack}
-                        className="mr-4 rounded-full w-10 h-10 p-0 flex items-center justify-center"
+                        className="mr-4 rounded-full w-10 h-10 p-0 flex items-center justify-center border-black"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -174,7 +174,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
             </div>
 
             {/* Search Bar */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-black">
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                     <input 
@@ -189,7 +189,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
             </div>
 
             {/* Table */}
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white shadow-sm rounded-lg border border-black overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -279,7 +279,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Total Registered Card */}
         <div 
             onClick={() => handleFilterClick('total')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-blue-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-black cursor-pointer transition-all hover:shadow-md hover:border-gray-700 group"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -295,7 +295,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Votes Cast Card */}
         <div 
             onClick={() => handleFilterClick('voted')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-green-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-black cursor-pointer transition-all hover:shadow-md hover:border-gray-700 group"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -312,7 +312,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Pending Votes Card */}
         <div 
             onClick={() => handleFilterClick('pending')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-orange-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-black cursor-pointer transition-all hover:shadow-md hover:border-gray-700 group"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -328,7 +328,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Sheema Card */}
         <div 
             onClick={() => handleFilterClick('sheema')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-teal-200 bg-teal-50/30 cursor-pointer transition-all hover:shadow-md hover:border-teal-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-black bg-teal-50/30 cursor-pointer transition-all hover:shadow-md hover:border-gray-700 group"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -353,7 +353,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         {/* Sadiq Card */}
         <div 
             onClick={() => handleFilterClick('sadiq')}
-            className="bg-white p-6 rounded-xl shadow-sm border border-indigo-200 bg-indigo-50/30 cursor-pointer transition-all hover:shadow-md hover:border-indigo-300 group"
+            className="bg-white p-6 rounded-xl shadow-sm border border-black bg-indigo-50/30 cursor-pointer transition-all hover:shadow-md hover:border-gray-700 group"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -373,8 +373,8 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Island Stats */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="bg-white rounded-xl shadow-sm border border-black overflow-hidden">
+          <div className="px-6 py-4 border-b border-black bg-gray-50">
             <h3 className="font-semibold text-gray-900">Turnout by Island</h3>
           </div>
           <div className="p-6">
@@ -406,8 +406,8 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         </div>
 
         {/* Party Stats */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="bg-white rounded-xl shadow-sm border border-black overflow-hidden">
+          <div className="px-6 py-4 border-b border-black bg-gray-50">
             <h3 className="font-semibold text-gray-900">Registrar Party Distribution</h3>
           </div>
           <div className="p-6">

@@ -112,13 +112,13 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   if (isCheckingSystem) {
-      return <div className="min-h-screen flex items-center justify-center bg-blue-50 text-gray-500">Checking System Status...</div>;
+      return <div className="min-h-screen flex items-center justify-center bg-sky-100 text-gray-500">Checking System Status...</div>;
   }
 
   // --- DATABASE ERROR / SETUP VIEW ---
   if (setupRequired === 'db-error') {
       return (
-        <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-sky-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-red-200">
                     <div className="flex items-center justify-center mb-4">
@@ -219,7 +219,7 @@ create policy "Public Access Tasks" on tasks for all using (true) with check (tr
   // --- CREATE ADMIN VIEW ---
   if (setupRequired === 'create-admin') {
     return (
-        <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-sky-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center">
                     <Shield className="h-6 w-6 text-white" />
@@ -274,7 +274,7 @@ create policy "Public Access Tasks" on tasks for all using (true) with check (tr
 
   // --- NORMAL LOGIN VIEW ---
   return (
-    <div className="min-h-screen bg-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-sky-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center">
             <Lock className="h-6 w-6 text-white" />

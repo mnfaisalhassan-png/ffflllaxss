@@ -40,23 +40,23 @@ export const Layout: React.FC<LayoutProps> = ({
         }}
         className={`w-full flex items-center px-4 py-3 text-sm font-medium transition-colors rounded-md mb-1
           ${isActive 
-            ? 'bg-primary-50 text-primary-700' 
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            ? 'bg-white shadow-sm text-green-700' 
+            : 'text-gray-600 hover:bg-green-100 hover:text-gray-900'
           }`}
       >
-        <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-600' : 'text-gray-400'}`} />
+        <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
         {label}
       </button>
     );
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex">
+    <div className="min-h-screen bg-sky-100 flex">
       {/* Sidebar for Desktop */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-white">
+      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-gray-200 bg-green-50">
         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4 mb-6">
-             <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
+             <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
                 <FileText className="h-5 w-5 text-white" />
              </div>
              <span className="text-xl font-bold text-gray-900">N.Kudafari</span>
@@ -72,10 +72,10 @@ export const Layout: React.FC<LayoutProps> = ({
             )}
           </nav>
         </div>
-        <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+        <div className="flex-shrink-0 flex border-t border-green-200 p-4">
           <div className="flex items-center w-full">
             <div className="flex-shrink-0">
-               <div className="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
+               <div className="h-9 w-9 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold">
                  {user.username.charAt(0).toUpperCase()}
                </div>
             </div>
@@ -96,9 +96,9 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-green-50 border-b border-green-200 h-16 flex items-center justify-between px-4">
         <div className="flex items-center">
-            <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-2">
+            <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center mr-2">
                 <FileText className="h-5 w-5 text-white" />
             </div>
             <span className="text-lg font-bold text-gray-900">N.Kudafari</span>
@@ -112,10 +112,10 @@ export const Layout: React.FC<LayoutProps> = ({
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 flex md:hidden">
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-green-50">
             <div className="pt-5 pb-4 px-4">
               <div className="flex-shrink-0 flex items-center mb-6">
-                <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
+                <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
                     <FileText className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">N.Kudafari</span>
