@@ -279,7 +279,7 @@ create policy "Public Access Tasks" on tasks for all using (true) with check (tr
         <div className="mx-auto h-12 w-12 bg-primary-600 rounded-xl flex items-center justify-center">
             <Lock className="h-6 w-6 text-white" />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-[20px] font-['Times_New_Roman'] font-bold text-red-400">
           N.Kudafari Council Election 2026
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
