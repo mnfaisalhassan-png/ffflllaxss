@@ -95,7 +95,7 @@ const App: React.FC = () => {
          // Redirect unauthorized
          return <div className="text-center p-10">Access Denied</div>;
       }
-      return <AdminPanel />;
+      return <AdminPanel currentUser={user!} />;
     }
     if (currentPage === 'profile') {
       return (

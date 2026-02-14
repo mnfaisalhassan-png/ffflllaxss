@@ -3,10 +3,14 @@ import { User, UserRole } from '../types';
 import { storageService } from '../services/storage';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Trash2, UserPlus, Save, Shield, User as UserIcon, Eye, AlertTriangle, Terminal } from 'lucide-react';
+import { Trash2, UserPlus, Save, Shield, User as UserIcon, Eye, AlertTriangle, Terminal, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
-export const AdminPanel: React.FC = () => {
+interface AdminPanelProps {
+  currentUser: User;
+}
+
+export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -19,6 +23,9 @@ export const AdminPanel: React.FC = () => {
 
   // Error State
   const [showSchemaError, setShowSchemaError] = useState(false);
+
+  // Super Admin Check
+  const isSuperAdmin = currentUser.username === 'faisalhassan';
 
   const refreshUsers = async () => {
       const data = await storageService.getUsers();
@@ -48,6 +55,10 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleDelete = async (userId: string) => {
+    if (!isSuperAdmin) {
+      alert("Only the Super Admin (faisalhassan) can delete users.");
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this user?')) {
       await storageService.deleteUser(userId);
       await refreshUsers();
@@ -56,6 +67,10 @@ export const AdminPanel: React.FC = () => {
 
   const handleSave = async () => {
     if (!username || !fullName) return alert("All fields except password (if editing) are required");
+
+    // Prevent non-superadmins from creating/promoting admins if we wanted to be very strict,
+    // but the UI restriction below handles the visual part.
+    // Here we just ensure data integrity.
 
     try {
         if (editingUser) {
@@ -110,6 +125,22 @@ export const AdminPanel: React.FC = () => {
         </Button>
       </div>
 
+      {!isSuperAdmin && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div className="flex">
+                  <div className="flex-shrink-0">
+                      <Lock className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                          You are logged in as a standard administrator. <br/>
+                          Deletion of users and role modifications are restricted to the Super Admin (<strong>faisalhassan</strong>).
+                      </p>
+                  </div>
+              </div>
+          </div>
+      )}
+
       <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -149,7 +180,7 @@ export const AdminPanel: React.FC = () => {
                   >
                     Edit
                   </button>
-                  {user.username !== 'faisalhassan' && ( // Prevent deleting main admin
+                  {isSuperAdmin && user.username !== 'faisalhassan' && ( 
                     <button 
                       onClick={() => handleDelete(user.id)}
                       className="text-red-600 hover:text-red-900"
@@ -199,8 +230,11 @@ export const AdminPanel: React.FC = () => {
           />
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <div className="flex flex-col space-y-2 mt-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role 
+                {!isSuperAdmin && <span className="text-xs text-orange-500 ml-2">(Locked: Super Admin Only)</span>}
+            </label>
+            <div className={`flex flex-col space-y-2 mt-2 ${!isSuperAdmin ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
               <label className="flex items-center space-x-2 cursor-pointer p-2 border rounded-md hover:bg-gray-50">
                 <input 
                   type="radio" 
@@ -208,7 +242,7 @@ export const AdminPanel: React.FC = () => {
                   value="admin" 
                   checked={role === 'admin'}
                   onChange={() => setRole('admin')}
-                  disabled={editingUser?.username === 'faisalhassan'} 
+                  disabled={editingUser?.username === 'faisalhassan' || !isSuperAdmin} 
                   className="text-primary-600 focus:ring-primary-500"
                 />
                 <div className="flex flex-col">
@@ -224,6 +258,7 @@ export const AdminPanel: React.FC = () => {
                   value="mamdhoob" 
                   checked={role === 'mamdhoob'}
                   onChange={() => setRole('mamdhoob')}
+                  disabled={!isSuperAdmin}
                   className="text-primary-600 focus:ring-primary-500"
                 />
                 <div className="flex flex-col">
@@ -239,6 +274,7 @@ export const AdminPanel: React.FC = () => {
                   value="user" 
                   checked={role === 'user'}
                   onChange={() => setRole('user')}
+                  disabled={!isSuperAdmin}
                   className="text-primary-600 focus:ring-primary-500"
                 />
                 <div className="flex flex-col">
