@@ -10,7 +10,8 @@ import {
   CheckCircle, XCircle, MapPin, Filter, 
   User as UserIcon, AlertTriangle, Flag, 
   CheckSquare, Info, Settings, X, ArrowLeft, ChevronRight,
-  ShieldCheck, Eye, Terminal, Database, MessageCircle
+  ShieldCheck, Eye, Terminal, Database, MessageCircle,
+  Download, FileSpreadsheet, Printer
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -30,6 +31,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
   
   // View State
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+
+  // Export State
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   // Form State
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -152,6 +156,118 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
       return matchesSearch && matchesFilter;
     });
   }, [voters, searchQuery, filterStatus]);
+
+  // Export CSV Handler
+  const handleExportCSV = () => {
+    const headers = ['ID Card', 'Full Name', 'Gender', 'Address', 'Island', 'Phone', 'Party', 'Status', 'Sheema', 'Sadiq', 'Communicated', 'Notes'];
+    const csvContent = [
+        headers.join(','),
+        ...filteredVoters.map(v => [
+            `"${v.idCardNumber}"`,
+            `"${v.fullName}"`,
+            `"${v.gender || ''}"`,
+            `"${v.address}"`,
+            `"${v.island}"`,
+            `"${v.phoneNumber || ''}"`,
+            `"${v.registrarParty || ''}"`,
+            `"${v.hasVoted ? 'Voted' : 'Eligible'}"`,
+            `"${v.sheema ? 'Yes' : 'No'}"`,
+            `"${v.sadiq ? 'Yes' : 'No'}"`,
+            `"${v.communicated ? 'Yes' : 'No'}"`,
+            `"${(v.notes || '').replace(/"/g, '""')}"` // Escape quotes
+        ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `voters_list_export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportMenuOpen(false);
+  };
+
+  // Export PDF/Print Handler
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("Please allow popups to print the list.");
+        return;
+    }
+
+    const tableRows = filteredVoters.map(v => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">${v.idCardNumber}</td>
+            <td style="padding: 8px;">${v.fullName}</td>
+            <td style="padding: 8px;">${v.gender || '-'}</td>
+            <td style="padding: 8px;">${v.island}</td>
+            <td style="padding: 8px;">${v.address}</td>
+            <td style="padding: 8px;">${v.phoneNumber || '-'}</td>
+            <td style="padding: 8px;">${v.registrarParty || '-'}</td>
+            <td style="padding: 8px;">
+                <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; background-color: ${v.hasVoted ? '#dcfce7' : '#fef9c3'}; color: ${v.hasVoted ? '#166534' : '#854d0e'};">
+                    ${v.hasVoted ? 'Voted' : 'Eligible'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Voters List - Election 2026</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; }
+                h1 { margin-bottom: 10px; color: #111; }
+                .meta { margin-bottom: 20px; font-size: 12px; color: #666; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                th { text-align: left; padding: 8px; background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb; font-weight: 600; color: #374151; }
+                td { color: #1f2937; }
+                @media print {
+                    @page { margin: 1cm; size: landscape; }
+                    body { -webkit-print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Voters Directory - N.Kudafari</h1>
+            <div class="meta">
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Records: ${filteredVoters.length}</p>
+                ${searchQuery ? `<p>Filter applied: "${searchQuery}"</p>` : ''}
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Card</th>
+                        <th>Full Name</th>
+                        <th>Gender</th>
+                        <th>Island</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Party</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+            <script>
+                // Auto print and close
+                window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+    setIsExportMenuOpen(false);
+  };
 
   // Form Reset
   const resetForm = () => {
@@ -432,11 +548,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
                             </div>
                         </div>
                     </div>
-                    {canCreate && (
-                        <Button onClick={handleCreateNew}>
-                            <Plus className="h-5 w-5 mr-2" /> New Registration
-                        </Button>
-                    )}
+
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {/* Export Menu */}
+                        <div className="relative">
+                            <Button 
+                                variant="secondary" 
+                                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                                className="whitespace-nowrap"
+                            >
+                                <Download className="h-4 w-4 mr-2" /> Download Voters List
+                            </Button>
+                            {isExportMenuOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setIsExportMenuOpen(false)}></div>
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200 py-1">
+                                        <button 
+                                            onClick={handleExportCSV} 
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600"/> Excel (CSV)
+                                        </button>
+                                        <button 
+                                            onClick={handleExportPDF} 
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                        >
+                                            <Printer className="h-4 w-4 mr-2 text-gray-600"/> Print / PDF
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {canCreate && (
+                            <Button onClick={handleCreateNew}>
+                                <Plus className="h-5 w-5 mr-2" /> New Registration
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-4">

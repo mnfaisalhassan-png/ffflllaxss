@@ -4,7 +4,7 @@ import { VoterRecord, User } from '../types';
 import { 
   Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
   Search, ArrowLeft, MapPin, Phone, Flag, Settings, Terminal, AlertTriangle,
-  FileText, ClipboardCheck, Calendar, Activity
+  FileText, ClipboardCheck, Calendar, Activity, Download, FileSpreadsheet, Printer
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -22,12 +22,16 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
   const [selectedParty, setSelectedParty] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Export State
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+
   // Election Config State
   const [electionConfig, setElectionConfig] = useState<{ start: number, end: number }>({ start: 0, end: 0 });
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
   
   // Admin Config Modal
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [newStartDate, setNewStartDate] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
   const [dbError, setDbError] = useState(false);
 
@@ -186,6 +190,116 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
     }
   };
 
+  // --- EXPORT HANDLERS ---
+  const handleExportCSV = () => {
+    const headers = ['ID Card', 'Full Name', 'Gender', 'Address', 'Island', 'Phone', 'Party', 'Status', 'Sheema', 'Sadiq', 'Communicated'];
+    const csvContent = [
+        headers.join(','),
+        ...filteredList.map(v => [
+            `"${v.idCardNumber}"`,
+            `"${v.fullName}"`,
+            `"${v.gender || ''}"`,
+            `"${v.address}"`,
+            `"${v.island}"`,
+            `"${v.phoneNumber || ''}"`,
+            `"${v.registrarParty || ''}"`,
+            `"${v.hasVoted ? 'Voted' : 'Eligible'}"`,
+            `"${v.sheema ? 'Yes' : 'No'}"`,
+            `"${v.sadiq ? 'Yes' : 'No'}"`,
+            `"${v.communicated ? 'Yes' : 'No'}"`
+        ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const exportName = `export_${activeFilter || selectedIsland || selectedParty || 'list'}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.setAttribute('download', exportName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("Please allow popups to print the list.");
+        return;
+    }
+
+    const tableRows = filteredList.map(v => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">${v.idCardNumber}</td>
+            <td style="padding: 8px;">${v.fullName}</td>
+            <td style="padding: 8px;">${v.island}</td>
+            <td style="padding: 8px;">${v.address}</td>
+            <td style="padding: 8px;">${v.phoneNumber || '-'}</td>
+            <td style="padding: 8px;">${v.registrarParty || '-'}</td>
+            <td style="padding: 8px;">
+                <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; background-color: ${v.hasVoted ? '#dcfce7' : '#fef9c3'}; color: ${v.hasVoted ? '#166534' : '#854d0e'};">
+                    ${v.hasVoted ? 'Voted' : 'Eligible'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+
+    const title = getHeaderInfo().title;
+
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Election Export - ${title}</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; }
+                h1 { margin-bottom: 10px; color: #111; }
+                .meta { margin-bottom: 20px; font-size: 12px; color: #666; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                th { text-align: left; padding: 8px; background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb; font-weight: 600; color: #374151; }
+                td { color: #1f2937; }
+                @media print {
+                    @page { margin: 1cm; size: landscape; }
+                    body { -webkit-print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>${title}</h1>
+            <div class="meta">
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Records: ${filteredList.length}</p>
+                ${searchQuery ? `<p>Filter applied: "${searchQuery}"</p>` : ''}
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Card</th>
+                        <th>Full Name</th>
+                        <th>Island</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Party</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+    setIsExportMenuOpen(false);
+  };
+
   const handleFilterClick = (filter: 'sheema' | 'sadiq' | 'total' | 'voted' | 'pending') => {
       setSelectedIsland(null);
       setSelectedParty(null);
@@ -236,8 +350,10 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
   const handleOpenConfig = () => {
       if (currentUser.role !== 'admin') return;
       
-      // Default to current time if invalid
+      const startTime = electionConfig.start > 0 ? electionConfig.start : Date.now();
       const endTime = electionConfig.end > 0 ? electionConfig.end : Date.now();
+      
+      setNewStartDate(toLocalISOString(startTime));
       setNewEndDate(toLocalISOString(endTime));
       setIsConfigModalOpen(true);
   };
@@ -248,22 +364,21 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
           return;
       }
 
-      if (!newEndDate) {
-          alert("Please select a valid end date.");
+      if (!newStartDate || !newEndDate) {
+          alert("Please select valid start and end dates.");
           return;
       }
 
-      // Keep existing start date, only update end date
-      const start = electionConfig.start;
+      const start = new Date(newStartDate).getTime();
       const end = new Date(newEndDate).getTime();
       
-      if (isNaN(end)) {
+      if (isNaN(start) || isNaN(end)) {
           alert("Invalid date format.");
           return;
       }
 
       if (end <= start) {
-          alert(`End date must be after the start date (${new Date(start).toLocaleString()}).`);
+          alert(`End date must be after the start date.`);
           return;
       }
 
@@ -301,13 +416,13 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
             {/* Header with Back Button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center">
-                    <Button 
-                        variant="secondary" 
+                    <button 
                         onClick={handleBack}
-                        className="mr-4 rounded-full w-10 h-10 p-0 flex items-center justify-center border-black"
+                        className="mr-6 flex items-center px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold text-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2"
                     >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
+                        <ArrowLeft className="h-6 w-6 mr-2" />
+                        Back
+                    </button>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                             {headerInfo.icon}
@@ -317,6 +432,36 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
                             Showing {filteredList.length} records
                         </p>
                     </div>
+                </div>
+
+                {/* Export Menu */}
+                <div className="relative">
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                        className="whitespace-nowrap"
+                    >
+                        <Download className="h-4 w-4 mr-2" /> Download Voters List
+                    </Button>
+                    {isExportMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsExportMenuOpen(false)}></div>
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200 py-1">
+                                <button 
+                                    onClick={handleExportCSV} 
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                >
+                                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600"/> Excel (CSV)
+                                </button>
+                                <button 
+                                    onClick={handleExportPDF} 
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                >
+                                    <Printer className="h-4 w-4 mr-2 text-gray-600"/> Print / PDF
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -720,23 +865,18 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
         >
             <div className="space-y-4">
                 <p className="text-sm text-gray-600">
-                    Update the election ending date and time. The countdown will target this time if the election has started.
+                    Update the election timeline.
                 </p>
                 
-                {/* Show Start Date Read-Only */}
-                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mb-2">
-                    <div className="flex items-start">
-                        <Calendar className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Election Start Date (Fixed)</label>
-                            <div className="text-sm font-medium text-gray-900 mt-1">
-                                {electionConfig.start > 0 ? new Date(electionConfig.start).toLocaleString(undefined, {
-                                    dateStyle: 'full',
-                                    timeStyle: 'short'
-                                }) : 'Not set'}
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Election Start Date & Time</label>
+                    <input 
+                        type="datetime-local"
+                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        value={newStartDate}
+                        onChange={e => setNewStartDate(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Countdown timer counts down to this date.</p>
                 </div>
 
                 <div>
@@ -747,7 +887,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
                         value={newEndDate}
                         onChange={e => setNewEndDate(e.target.value)}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Must be later than the start date above.</p>
+                    <p className="text-xs text-gray-500 mt-1">Voting ends at this time.</p>
                 </div>
             </div>
         </Modal>
