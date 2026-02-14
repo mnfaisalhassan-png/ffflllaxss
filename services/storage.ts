@@ -80,6 +80,17 @@ export const storageService = {
   },
 
   deleteUser: async (id: string) => {
+    // Manually delete dependent records because default tables don't always have ON DELETE CASCADE set up
+    // Delete user's messages
+    await supabase.from('messages').delete().eq('user_id', id);
+    
+    // Delete tasks assigned to this user
+    await supabase.from('tasks').delete().eq('assigned_to', id);
+    
+    // Delete tasks created by this user
+    await supabase.from('tasks').delete().eq('assigned_by', id);
+
+    // Finally delete the user
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) throw error;
   },
