@@ -4,7 +4,7 @@ import { VoterRecord, User } from '../types';
 import { 
   Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
   Search, ArrowLeft, MapPin, Phone, Flag, Settings, Terminal, AlertTriangle,
-  FileText, ClipboardCheck
+  FileText, ClipboardCheck, Calendar
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -28,7 +28,6 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
   
   // Admin Config Modal
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const [newStartDate, setNewStartDate] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
   const [dbError, setDbError] = useState(false);
 
@@ -224,23 +223,47 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
 
   // Helper to format datetime for input
   const toLocalISOString = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const offset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    if (!timestamp || isNaN(timestamp)) return '';
+    try {
+        const date = new Date(timestamp);
+        const offset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    } catch (e) {
+        return '';
+    }
   };
 
   const handleOpenConfig = () => {
-      setNewStartDate(toLocalISOString(electionConfig.start));
-      setNewEndDate(toLocalISOString(electionConfig.end));
+      if (currentUser.role !== 'admin') return;
+      
+      // Default to current time if invalid
+      const endTime = electionConfig.end > 0 ? electionConfig.end : Date.now();
+      setNewEndDate(toLocalISOString(endTime));
       setIsConfigModalOpen(true);
   };
 
   const handleSaveConfig = async () => {
-      const start = new Date(newStartDate).getTime();
+      if (currentUser.role !== 'admin') {
+          alert("Only administrators can configure election dates.");
+          return;
+      }
+
+      if (!newEndDate) {
+          alert("Please select a valid end date.");
+          return;
+      }
+
+      // Keep existing start date, only update end date
+      const start = electionConfig.start;
       const end = new Date(newEndDate).getTime();
       
+      if (isNaN(end)) {
+          alert("Invalid date format.");
+          return;
+      }
+
       if (end <= start) {
-          alert("End date must be after start date.");
+          alert(`End date must be after the start date (${new Date(start).toLocaleString()}).`);
           return;
       }
 
@@ -252,28 +275,19 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
           console.error(e);
           if (e.message && e.message.includes('relation "settings" does not exist')) {
               setDbError(true);
+              setIsConfigModalOpen(false); // Close config modal to show error modal
           } else {
-              alert("Failed to update settings.");
+              alert("Failed to update settings: " + e.message);
           }
       }
   };
 
   const handleCheckRegistry = () => {
-      setSearchQuery('');
-      setActiveFilter(null);
-      setSelectedIsland(null);
-      setSelectedParty(null);
-      // Focus search input
-      if (searchInputRef.current) {
-          searchInputRef.current.focus();
-          searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      window.open('https://pprvr.elections.gov.mv/statuscheck/vr', '_blank');
   };
 
   const handleCheckParty = () => {
-      if (partySectionRef.current) {
-          partySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      window.open('https://pprvr.elections.gov.mv/', '_blank');
   };
 
   if (isLoading) return <div className="p-10 text-center text-gray-500">Loading voting status...</div>;
@@ -418,43 +432,43 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
         )}
       </div>
 
-      {/* NEW HERO SECTION - COMBINED PURPLE CARD */}
+      {/* NEW HERO SECTION - COMBINED LIGHT PINK CARD */}
       <div className="w-full">
-          <div className="bg-[#5D2E86] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+          <div className="bg-pink-100 rounded-2xl p-8 text-pink-900 shadow-lg relative overflow-hidden border border-pink-200">
              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                  <div className="text-center md:text-left">
                      <h2 className="text-2xl sm:text-3xl font-bold mb-2 leading-tight">
                         Local Council & Women's Development<br className="hidden md:block"/> Committee Election 2026
                      </h2>
                      {electionConfig.start > 0 && (
-                        <div className="inline-flex items-center bg-purple-800/50 rounded-full px-4 py-1.5 text-sm text-purple-100 border border-purple-400/30">
-                            <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        <div className="inline-flex items-center bg-white/60 rounded-full px-4 py-1.5 text-sm text-pink-800 border border-pink-200 backdrop-blur-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
                             {new Date(electionConfig.start).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </div>
                      )}
                  </div>
                  
-                 <div className="flex items-center space-x-2 sm:space-x-4 bg-white/10 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-white/10 shadow-inner">
+                 <div className="flex items-center space-x-2 sm:space-x-4 bg-white/40 p-4 sm:p-6 rounded-2xl backdrop-blur-md border border-white/50 shadow-sm">
                     <div className="flex flex-col items-center">
-                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
-                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Days</span>
+                        <span className="text-3xl sm:text-5xl font-bold font-mono text-pink-900">{String(timeLeft.days).padStart(2, '0')}</span>
+                        <span className="text-xs text-pink-700 uppercase tracking-wider mt-1">Days</span>
                     </div>
-                    <div className="text-2xl sm:text-4xl font-light text-purple-300 pb-4">:</div>
+                    <div className="text-2xl sm:text-4xl font-light text-pink-400 pb-4">:</div>
                     <div className="flex flex-col items-center">
-                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
-                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Hrs</span>
+                        <span className="text-3xl sm:text-5xl font-bold font-mono text-pink-900">{String(timeLeft.hours).padStart(2, '0')}</span>
+                        <span className="text-xs text-pink-700 uppercase tracking-wider mt-1">Hrs</span>
                     </div>
-                    <div className="text-2xl sm:text-4xl font-light text-purple-300 pb-4">:</div>
+                    <div className="text-2xl sm:text-4xl font-light text-pink-400 pb-4">:</div>
                     <div className="flex flex-col items-center">
-                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Min</span>
+                        <span className="text-3xl sm:text-5xl font-bold font-mono text-pink-900">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                        <span className="text-xs text-pink-700 uppercase tracking-wider mt-1">Min</span>
                     </div>
                  </div>
              </div>
              
              {/* Decorative Circle */}
-             <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-600 opacity-20 rounded-full blur-3xl"></div>
-             <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600 opacity-20 rounded-full blur-3xl"></div>
+             <div className="absolute -top-24 -right-24 w-96 h-96 bg-pink-300 opacity-30 rounded-full blur-3xl"></div>
+             <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-200 opacity-30 rounded-full blur-3xl"></div>
           </div>
       </div>
 
@@ -655,41 +669,52 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
       </div>
 
       {/* Admin Election Config Modal */}
-      <Modal 
-        isOpen={isConfigModalOpen} 
-        onClose={() => setIsConfigModalOpen(false)}
-        title="Configure Election Schedule"
-        footer={
-            <>
-                <Button variant="secondary" onClick={() => setIsConfigModalOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveConfig}>Save Schedule</Button>
-            </>
-        }
-      >
-        <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-                Set the start and end dates for the election. This controls the dashboard countdown.
-            </p>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Election Start Date & Time</label>
-                <input 
-                    type="datetime-local"
-                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    value={newStartDate}
-                    onChange={e => setNewStartDate(e.target.value)}
-                />
+      {currentUser.role === 'admin' && (
+        <Modal 
+            isOpen={isConfigModalOpen} 
+            onClose={() => setIsConfigModalOpen(false)}
+            title="Configure Election Schedule"
+            footer={
+                <>
+                    <Button variant="secondary" onClick={() => setIsConfigModalOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveConfig}>Save Schedule</Button>
+                </>
+            }
+        >
+            <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                    Update the election ending date and time. The countdown will target this time if the election has started.
+                </p>
+                
+                {/* Show Start Date Read-Only */}
+                <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mb-2">
+                    <div className="flex items-start">
+                        <Calendar className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Election Start Date (Fixed)</label>
+                            <div className="text-sm font-medium text-gray-900 mt-1">
+                                {electionConfig.start > 0 ? new Date(electionConfig.start).toLocaleString(undefined, {
+                                    dateStyle: 'full',
+                                    timeStyle: 'short'
+                                }) : 'Not set'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Election Ending Date & Time</label>
+                    <input 
+                        type="datetime-local"
+                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        value={newEndDate}
+                        onChange={e => setNewEndDate(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Must be later than the start date above.</p>
+                </div>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Election End Date & Time</label>
-                <input 
-                    type="datetime-local"
-                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                    value={newEndDate}
-                    onChange={e => setNewEndDate(e.target.value)}
-                />
-            </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
 
       {/* DB Setup Error Modal */}
       <Modal
