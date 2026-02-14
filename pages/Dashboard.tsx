@@ -393,6 +393,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
     setTimeout(() => setNotification(null), 3000);
   }
 
+  // --- PROGRESS BAR CALCULATION FOR DIRECTORY VIEW ---
+  const totalVoters = voters.length;
+  const votedCount = voters.filter(v => v.hasVoted).length;
+  const progressPct = totalVoters > 0 ? Math.round((votedCount / totalVoters) * 100) : 0;
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-6rem)]">
       {/* Top Notification Area */}
@@ -410,12 +415,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
              {/* Header & Actions */}
              <div className="p-6 border-b border-gray-200">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
+                    <div className="flex-1">
                         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                             <UserIcon className="h-6 w-6 mr-2 text-primary-600"/>
                             Voters Directory
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage registration and voting status</p>
+                        
+                        {/* Compact Progress Bar */}
+                        <div className="mt-2 mb-1 max-w-md">
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium text-gray-600">Voting Progress: <span className="text-primary-600">{progressPct}%</span></span>
+                                <span className="text-gray-400">{votedCount}/{totalVoters} Voted</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="bg-primary-600 h-2 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }}></div>
+                            </div>
+                        </div>
                     </div>
                     {canCreate && (
                         <Button onClick={handleCreateNew}>

@@ -4,7 +4,7 @@ import { VoterRecord, User } from '../types';
 import { 
   Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
   Search, ArrowLeft, MapPin, Phone, Flag, Settings, Terminal, AlertTriangle,
-  FileText, ClipboardCheck, Calendar
+  FileText, ClipboardCheck, Calendar, Activity
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -493,6 +493,43 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
               </div>
               <span className="text-lg font-medium text-gray-800 group-hover:text-[#5D2E86] transition-colors">Check your voter registry</span>
           </div>
+      </div>
+
+      {/* NEW: Voting Progress Bar Section */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 gap-2">
+            <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-primary-600" />
+                    Overall Election Progress
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Real-time tracking of votes cast vs registered voters</p>
+            </div>
+            <div className="flex items-baseline text-primary-700">
+                <span className="text-4xl font-extrabold tracking-tight">{percentage}%</span>
+                <span className="ml-1 text-sm font-medium text-gray-500">completed</span>
+            </div>
+        </div>
+        
+        {/* Bar Track */}
+        <div className="h-6 bg-gray-100 rounded-full overflow-hidden shadow-inner relative">
+            {/* Animated Bar */}
+            <div 
+                className="h-full bg-gradient-to-r from-primary-500 via-primary-600 to-indigo-600 rounded-full relative transition-all duration-1000 ease-out"
+                style={{ width: `${percentage}%` }}
+            >
+                {/* Shine Effect */}
+                <div className="absolute top-0 left-0 w-full h-full bg-white opacity-20 bg-[length:10px_10px] bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)]"></div>
+            </div>
+        </div>
+
+        <div className="mt-3 flex justify-between text-xs font-medium text-gray-400">
+            <div>0</div>
+            <div>
+                <span className="text-gray-900 font-bold">{votedCount}</span> Voted
+            </div>
+            <div>{totalVoters} Total</div>
+        </div>
       </div>
 
       {/* Hidden search input reference for "Check Registry" action */}
