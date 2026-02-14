@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { storageService } from '../services/storage';
-import { VoterRecord } from '../types';
+import { VoterRecord, User } from '../types';
 import { 
   Users, CheckCircle, XCircle, PieChart, CheckSquare, ShieldCheck,
-  Search, ArrowLeft, MapPin, Phone, Flag
+  Search, ArrowLeft, MapPin, Phone, Flag, Settings, Terminal, AlertTriangle,
+  FileText, ClipboardCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 
 interface VotingStatusProps {
+    currentUser: User;
     onVoterClick?: (id: string) => void;
 }
 
-export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
+export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoterClick }) => {
   const [voters, setVoters] = useState<VoterRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'sheema' | 'sadiq' | 'total' | 'voted' | 'pending' | null>(null);
@@ -19,15 +22,81 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
   const [selectedParty, setSelectedParty] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Election Config State
+  const [electionConfig, setElectionConfig] = useState<{ start: number, end: number }>({ start: 0, end: 0 });
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+  
+  // Admin Config Modal
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [newStartDate, setNewStartDate] = useState('');
+  const [newEndDate, setNewEndDate] = useState('');
+  const [dbError, setDbError] = useState(false);
+
+  // Refs for scrolling
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const partySectionRef = useRef<HTMLDivElement>(null);
+
   // Image handling
   const [sheemaImgError, setSheemaImgError] = useState(false);
 
-  useEffect(() => {
-    storageService.getVoters().then(data => {
-        setVoters(data);
+  const fetchData = async () => {
+    try {
+        const [votersData, settingsData] = await Promise.all([
+            storageService.getVoters(),
+            storageService.getElectionSettings()
+        ]);
+        setVoters(votersData);
+        setElectionConfig({ start: settingsData.electionStart, end: settingsData.electionEnd });
+        setDbError(false);
+    } catch (e: any) {
+        console.error("Error fetching data:", e);
+        if (e.message && (e.message.includes('relation "settings" does not exist') || e.code === '42P01')) {
+            setDbError(true);
+        }
+    } finally {
         setIsLoading(false);
-    });
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
+
+  // Timer Logic
+  useEffect(() => {
+    if (electionConfig.start === 0) return;
+
+    const calculateTimeLeft = () => {
+        const now = new Date().getTime();
+        // If election hasn't started, count down to start.
+        // If started but not ended, count down to end.
+        // If ended, show 0.
+        let targetDate = electionConfig.start;
+        
+        if (now >= electionConfig.start && now < electionConfig.end) {
+            targetDate = electionConfig.end;
+        } else if (now >= electionConfig.end) {
+            return { days: 0, hours: 0, minutes: 0 };
+        }
+
+        const distance = targetDate - now;
+        if (distance < 0) return { days: 0, hours: 0, minutes: 0 };
+
+        return {
+            days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+        };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+        setTimeLeft(calculateTimeLeft());
+    }, 60000); // Update every minute is enough for this UI
+
+    return () => clearInterval(timer);
+  }, [electionConfig]);
 
   // General Stats
   const totalVoters = voters.length;
@@ -122,18 +191,28 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
       setSelectedIsland(null);
       setSelectedParty(null);
       setActiveFilter(filter);
+      // Scroll to list
+      setTimeout(() => {
+          document.getElementById('voter-list')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
   };
 
   const handleIslandClick = (islandName: string) => {
       setActiveFilter(null);
       setSelectedParty(null);
       setSelectedIsland(islandName);
+      setTimeout(() => {
+          document.getElementById('voter-list')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
   };
 
   const handlePartyClick = (partyName: string) => {
       setActiveFilter(null);
       setSelectedIsland(null);
       setSelectedParty(partyName);
+      setTimeout(() => {
+          document.getElementById('voter-list')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
   };
 
   const handleBack = () => {
@@ -143,6 +222,60 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
       setSearchQuery('');
   };
 
+  // Helper to format datetime for input
+  const toLocalISOString = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const handleOpenConfig = () => {
+      setNewStartDate(toLocalISOString(electionConfig.start));
+      setNewEndDate(toLocalISOString(electionConfig.end));
+      setIsConfigModalOpen(true);
+  };
+
+  const handleSaveConfig = async () => {
+      const start = new Date(newStartDate).getTime();
+      const end = new Date(newEndDate).getTime();
+      
+      if (end <= start) {
+          alert("End date must be after start date.");
+          return;
+      }
+
+      try {
+          await storageService.updateElectionSettings(start, end);
+          setElectionConfig({ start, end });
+          setIsConfigModalOpen(false);
+      } catch (e: any) {
+          console.error(e);
+          if (e.message && e.message.includes('relation "settings" does not exist')) {
+              setDbError(true);
+          } else {
+              alert("Failed to update settings.");
+          }
+      }
+  };
+
+  const handleCheckRegistry = () => {
+      setSearchQuery('');
+      setActiveFilter(null);
+      setSelectedIsland(null);
+      setSelectedParty(null);
+      // Focus search input
+      if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+  };
+
+  const handleCheckParty = () => {
+      if (partySectionRef.current) {
+          partySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+  };
+
   if (isLoading) return <div className="p-10 text-center text-gray-500">Loading voting status...</div>;
 
   // Render List View if a filter, island, or party is active
@@ -150,7 +283,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
       const headerInfo = getHeaderInfo();
       
       return (
-        <div className="space-y-6 max-w-7xl mx-auto">
+        <div id="voter-list" className="space-y-6 max-w-7xl mx-auto">
             {/* Header with Back Button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center">
@@ -178,6 +311,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
                 <div className="relative">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                     <input 
+                        ref={searchInputRef}
                         type="text"
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-all"
                         placeholder="Search by name, ID card, island, or address..."
@@ -266,17 +400,96 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
       );
   }
 
-  // Standard Overview Render
+  // Standard Overview Render (Dashboard)
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-        <PieChart className="mr-3 h-6 w-6 text-primary-600"/>
-        <span className="underline decoration-green-500 decoration-4 underline-offset-4">
-            N.Kudafari Council Election Overview
-        </span>
-      </h1>
+    <div className="space-y-8 max-w-7xl mx-auto">
+      
+      {/* Title & Admin Controls */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900 hidden sm:block">Election Dashboard</h1>
+        {currentUser.role === 'admin' && (
+            <button 
+                onClick={handleOpenConfig}
+                className="ml-auto flex items-center text-sm text-gray-600 hover:text-purple-700 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 transition-colors"
+            >
+                <Settings className="h-4 w-4 mr-1.5" />
+                Configure Election Date
+            </button>
+        )}
+      </div>
 
-      {/* Summary Cards */}
+      {/* NEW HERO SECTION - COMBINED PURPLE CARD */}
+      <div className="w-full">
+          <div className="bg-[#5D2E86] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                 <div className="text-center md:text-left">
+                     <h2 className="text-2xl sm:text-3xl font-bold mb-2 leading-tight">
+                        Local Council & Women's Development<br className="hidden md:block"/> Committee Election 2026
+                     </h2>
+                     {electionConfig.start > 0 && (
+                        <div className="inline-flex items-center bg-purple-800/50 rounded-full px-4 py-1.5 text-sm text-purple-100 border border-purple-400/30">
+                            <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                            {new Date(electionConfig.start).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </div>
+                     )}
+                 </div>
+                 
+                 <div className="flex items-center space-x-2 sm:space-x-4 bg-white/10 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-white/10 shadow-inner">
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
+                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Days</span>
+                    </div>
+                    <div className="text-2xl sm:text-4xl font-light text-purple-300 pb-4">:</div>
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
+                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Hrs</span>
+                    </div>
+                    <div className="text-2xl sm:text-4xl font-light text-purple-300 pb-4">:</div>
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl sm:text-5xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                        <span className="text-xs text-purple-200 uppercase tracking-wider mt-1">Min</span>
+                    </div>
+                 </div>
+             </div>
+             
+             {/* Decorative Circle */}
+             <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-600 opacity-20 rounded-full blur-3xl"></div>
+             <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600 opacity-20 rounded-full blur-3xl"></div>
+          </div>
+      </div>
+
+      {/* ACTION BUTTONS (White Cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div 
+            onClick={handleCheckParty}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center cursor-pointer hover:shadow-md transition-shadow group"
+          >
+              <div className="h-12 w-12 rounded-xl bg-[#F3E8FF] flex items-center justify-center mr-4 group-hover:bg-[#E9D5FF] transition-colors">
+                  <Flag className="h-6 w-6 text-[#5D2E86]" />
+              </div>
+              <span className="text-lg font-medium text-gray-800 group-hover:text-[#5D2E86] transition-colors">Check your registered party</span>
+          </div>
+
+          <div 
+            onClick={handleCheckRegistry}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center cursor-pointer hover:shadow-md transition-shadow group"
+          >
+              <div className="h-12 w-12 rounded-xl bg-[#F3E8FF] flex items-center justify-center mr-4 group-hover:bg-[#E9D5FF] transition-colors">
+                  <ClipboardCheck className="h-6 w-6 text-[#5D2E86]" />
+              </div>
+              <span className="text-lg font-medium text-gray-800 group-hover:text-[#5D2E86] transition-colors">Check your voter registry</span>
+          </div>
+      </div>
+
+      {/* Hidden search input reference for "Check Registry" action */}
+      <div className="opacity-0 h-0 overflow-hidden">
+        <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      </div>
+
+      {/* SECTION DIVIDER */}
+      <div className="border-t border-gray-200 my-8"></div>
+
+      {/* Summary Cards (Existing Functionality) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {/* Total Registered Card */}
         <div 
@@ -408,7 +621,7 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
         </div>
 
         {/* Party Stats */}
-        <div className="bg-white rounded-xl shadow-sm border border-black overflow-hidden">
+        <div ref={partySectionRef} className="bg-white rounded-xl shadow-sm border border-black overflow-hidden">
           <div className="px-6 py-4 border-b border-black bg-gray-50">
             <h3 className="font-semibold text-gray-900">Registrar Party Distribution</h3>
           </div>
@@ -440,6 +653,78 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ onVoterClick }) => {
           </div>
         </div>
       </div>
+
+      {/* Admin Election Config Modal */}
+      <Modal 
+        isOpen={isConfigModalOpen} 
+        onClose={() => setIsConfigModalOpen(false)}
+        title="Configure Election Schedule"
+        footer={
+            <>
+                <Button variant="secondary" onClick={() => setIsConfigModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveConfig}>Save Schedule</Button>
+            </>
+        }
+      >
+        <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+                Set the start and end dates for the election. This controls the dashboard countdown.
+            </p>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Election Start Date & Time</label>
+                <input 
+                    type="datetime-local"
+                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    value={newStartDate}
+                    onChange={e => setNewStartDate(e.target.value)}
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Election End Date & Time</label>
+                <input 
+                    type="datetime-local"
+                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    value={newEndDate}
+                    onChange={e => setNewEndDate(e.target.value)}
+                />
+            </div>
+        </div>
+      </Modal>
+
+      {/* DB Setup Error Modal */}
+      <Modal
+        isOpen={dbError}
+        onClose={() => setDbError(false)}
+        title="Database Setup Required"
+        footer={
+            <Button onClick={() => window.location.reload()}>Reload Page</Button>
+        }
+      >
+          <div className="flex flex-col items-center justify-center p-2">
+            <div className="bg-orange-100 p-3 rounded-full mb-4">
+                <AlertTriangle className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Settings Table Missing</h3>
+            <p className="text-sm text-gray-600 text-center mb-4">
+                To save election dates, a <code>settings</code> table is required.
+            </p>
+            
+            <div className="bg-gray-800 rounded-md p-4 w-full relative group">
+                <div className="absolute top-2 right-2 text-xs text-gray-400 flex items-center">
+                    <Terminal className="w-3 h-3 mr-1" /> SQL
+                </div>
+                <code className="text-xs text-green-400 whitespace-pre-wrap break-all font-mono">
+{`create table if not exists settings (
+  key text primary key,
+  value text not null
+);
+
+alter table settings enable row level security;
+create policy "Public Access Settings" on settings for all using (true) with check (true);`}
+                </code>
+            </div>
+          </div>
+      </Modal>
     </div>
   );
 };

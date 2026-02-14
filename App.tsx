@@ -82,7 +82,7 @@ const App: React.FC = () => {
       );
     }
     if (currentPage === 'voting-status') {
-      return <VotingStatus onVoterClick={handleVoterClick} />;
+      return <VotingStatus currentUser={user!} onVoterClick={handleVoterClick} />;
     }
     if (currentPage === 'chat') {
         return <ChatPage currentUser={user!} />;

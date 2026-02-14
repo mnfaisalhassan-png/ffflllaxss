@@ -190,6 +190,37 @@ export const storageService = {
     if (error) throw error;
   },
 
+  // --- SETTINGS: ELECTION CONFIG ---
+
+  getElectionSettings: async (): Promise<{ electionStart: number, electionEnd: number }> => {
+    const { data, error } = await supabase.from('settings').select('*');
+    
+    // Default: April 4th, 2026, 8:00 AM - 4:00 PM
+    const defaults = {
+        electionStart: new Date('2026-04-04T08:00:00').getTime(),
+        electionEnd: new Date('2026-04-04T16:00:00').getTime()
+    };
+
+    if (error || !data) return defaults;
+
+    const startRow = data.find((r: any) => r.key === 'election_start');
+    const endRow = data.find((r: any) => r.key === 'election_end');
+
+    return {
+        electionStart: startRow ? parseInt(startRow.value) : defaults.electionStart,
+        electionEnd: endRow ? parseInt(endRow.value) : defaults.electionEnd
+    };
+  },
+
+  updateElectionSettings: async (start: number, end: number) => {
+    const { error } = await supabase.from('settings').upsert([
+        { key: 'election_start', value: start.toString() },
+        { key: 'election_end', value: end.toString() }
+    ], { onConflict: 'key' });
+    
+    if (error) throw error;
+  },
+
   // --- CHAT MESSAGES (Supabase) ---
   
   getMessages: async (limit = 50): Promise<ChatMessage[]> => {
