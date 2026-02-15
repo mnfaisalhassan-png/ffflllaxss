@@ -140,7 +140,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
 
   // Filtered List
   const filteredVoters = useMemo(() => {
-    return voters.filter(v => {
+    const filtered = voters.filter(v => {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
         v.fullName.toLowerCase().includes(query) || 
@@ -154,6 +154,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, initialVoterI
         !v.hasVoted;
 
       return matchesSearch && matchesFilter;
+    });
+
+    // Sort A-Z by Address, then by Name
+    return filtered.sort((a, b) => {
+        const addrA = a.address || '';
+        const addrB = b.address || '';
+        const addressComparison = addrA.localeCompare(addrB);
+        
+        if (addressComparison !== 0) {
+            return addressComparison;
+        }
+        
+        return a.fullName.localeCompare(b.fullName);
     });
   }, [voters, searchQuery, filterStatus]);
 

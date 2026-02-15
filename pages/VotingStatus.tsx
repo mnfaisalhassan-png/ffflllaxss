@@ -170,6 +170,16 @@ export const VotingStatus: React.FC<VotingStatusProps> = ({ currentUser, onVoter
         );
     }
     return true;
+  }).sort((a, b) => {
+      const addrA = a.address || '';
+      const addrB = b.address || '';
+      const addressComparison = addrA.localeCompare(addrB);
+      
+      if (addressComparison !== 0) {
+          return addressComparison;
+      }
+      
+      return a.fullName.localeCompare(b.fullName);
   });
 
   const getHeaderInfo = () => {
